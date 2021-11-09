@@ -55,7 +55,6 @@ def metadata_mapping(encodings_file: PathLike, metadata_path: PathLike) -> List[
     metadata = metadata.replace(np.nan, "Unknown")
 
     # Get patient encoded IDs and map to targets
-    targets = list()
     targets = metadata[
         metadata["encoding"].isin(encodings)
     ].Annotated_ancestry.to_list()
@@ -64,7 +63,7 @@ def metadata_mapping(encodings_file: PathLike, metadata_path: PathLike) -> List[
     return targets
 
 
-def one_hot_encoding(list_to_encode):
+def one_hot_encoding(list_to_encode: List[str]) -> np.ndarray:
     """Hot encodes a list of strings
     Parameters
     ----------
@@ -74,9 +73,10 @@ def one_hot_encoding(list_to_encode):
     -------
     one_hot_encoded : one-hot encoded numpy array
     """
-    ### One hot encoding
-    # Implement your code
-    return encoded_array
+    X = np.asanyarray(list_to_encode)
+    if X.ndim == 1:
+        X = X.reshape(-1, 1)
+    return OneHotEncoder(sparse=False).fit_transform(X)
 
 
 def split_train_test(X, targets, prop):
@@ -149,10 +149,10 @@ def get_enc_dict(original_targets, targets):
     -------
     dictionary with encoding mapping
     """
-    targets = tuple(map(tuple, targets))
+    targets = list(map(tuple, targets))
 
     # Initialize df
-    df = pd.DataFrame({"targets": list(targets), "original_targets": original_targets})
+    df = pd.DataFrame({"targets": targets, "original_targets": original_targets})
     df = df.drop_duplicates(subset=["original_targets"])
 
     # Create dict
