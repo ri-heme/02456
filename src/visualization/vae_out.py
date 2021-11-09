@@ -22,9 +22,8 @@ def de_encoding(enc_targets, dict_encoding):
         return targets
 
     # If there is more than one target then we de_code the targets
-    enc_targets = tuple(map(tuple,enc_targets))
+    enc_targets = tuple(map(tuple, enc_targets))
     for i in enc_targets:
         target = dict_encoding[i]
         targets.append(target)
     return targets
-
