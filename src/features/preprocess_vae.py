@@ -3,15 +3,20 @@
 
 import os
 import pickle
-import pandas as pd
-from sklearn.preprocessing import OneHotEncoder
+from pathlib import Path
 from collections import defaultdict
+from typing import List, Union
+
 import numpy as np
-from sklearn.model_selection import train_test_split
+import pandas as pd
 import torch
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.model_selection import train_test_split
+
+PathLike = Union[os.PathLike, str, bytes]
 
 
-def metadata_mapping(encodings_file, metadata_path):
+def metadata_mapping(encodings_file: PathLike, metadata_path: PathLike) -> List[str]:
     """Reads metadata and list of encodings and outputs list of targets
     Parameters
     ----------
