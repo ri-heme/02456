@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 """vae_out.py: Save / plot data from VAE model """
 import pandas as pd
-from preprocess_vae import impute_data
-import torch
+from src.features.preprocess_vae import impute_data
 
 
 def de_encoding(enc_targets, dict_encoding):

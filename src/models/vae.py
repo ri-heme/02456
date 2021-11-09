@@ -15,9 +15,9 @@ from torch import nn, optim
 from torch.utils.data import DataLoader
 
 # Custom methods
-from pytorch_loading import SNPLoading
-from preprocess_vae import one_hot_encoding, metadata_mapping, split_train_test, impute_data, get_enc_dict, loss_ignore_nans
-from vae_out import de_encoding
+from src.data.pytorch_loading import SNPLoading
+from src.features.preprocess_vae import one_hot_encoding, metadata_mapping, split_train_test, impute_data, get_enc_dict, loss_ignore_nans
+from src.visualization.vae_out import de_encoding
 
 ##################################################
 ### Initialize hyper parameters, CUDA and seed ###
@@ -25,13 +25,13 @@ from vae_out import de_encoding
 
 # Hyperparams
 CUDA = torch.cuda.is_available()
-SEED = #Replace with your value
-BATCH_SIZE = #Replace with your value 
-EPOCHS = #Replace with your value
-ZDIMS = #Replace with your value (Dimensions of latent space)
-TRAIN = #Replace with your value (proportion of samples to keep on training set)
-HIDDEN_UNITS = #Replace with your value (Units per layer)
-HIDDEN_LAYERS = #Replace with your value (Amount of hidden layers)
+SEED = None  #Replace with your value
+BATCH_SIZE = None  #Replace with your value 
+EPOCHS = None  #Replace with your value
+ZDIMS = None  #Replace with your value (Dimensions of latent space)
+TRAIN = None  #Replace with your value (proportion of samples to keep on training set)
+HIDDEN_UNITS = None  #Replace with your value (Units per layer)
+HIDDEN_LAYERS = None  #Replace with your value (Amount of hidden layers)
 
 # Set seed to GPU
 torch.manual_seed(SEED)

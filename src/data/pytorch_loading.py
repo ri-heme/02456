@@ -5,7 +5,7 @@ __author__      = "Felix Pacheco"
 
 import torch
 from torch.utils.data import DataLoader
-from preprocess_vae import one_hot_encoding
+from src.features.preprocess_vae import one_hot_encoding
 import numpy as np
 
 class SNPLoading(torch.utils.data.Dataset):
