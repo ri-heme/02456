@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 import torch
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import LabelEncoder
 from torch.utils.data import Dataset
 
 from src._typing import PathLike, Tuple
@@ -66,8 +66,8 @@ class SnpDataset(Dataset):
         if len(input_files) != metadata.shape[0]:
             raise Exception("Number of tensor files does not match number of targets.")
 
-        self.encoder = OneHotEncoder(sparse=False)
-        targets = self.encoder.fit_transform(metadata.ancestry.values.reshape(-1, 1))
+        self.encoder = LabelEncoder()
+        targets = self.encoder.fit_transform(metadata.ancestry.values)
 
         self.samples = list(zip(input_files, targets))
 
@@ -77,21 +77,18 @@ class SnpDataset(Dataset):
     def __getitem__(self, idx: int) -> Tuple[torch.FloatTensor, torch.FloatTensor]:
         X, y = self.samples[idx]
         X = torch.Tensor(torch.load(X)[:, [0]])  # Second dimension is not needed
-        X = torch.nan_to_num(X, nan=0).view(1, -1)  # Convert NaNs to zeros
-        y = torch.LongTensor(y).view(-1)
+        X = torch.nan_to_num(X, nan=0).view(-1)  # Convert NaNs to zeros
+        y = torch.LongTensor([y])
         return X, y
 
     @property
     def n_features(self) -> int:
-        return self[0][0].shape[1]
+        return len(self[0][0])
 
     @property
     def n_classes(self) -> int:
-        return len(self.encoder.categories_[0])
+        return len(self.encoder.classes_)
 
     @property
     def idx_to_class(self):
-        return {
-            tuple([0.0] * i + [1.0] + [0.0] * (self.n_target_classes - i - 1)): cat
-            for i, cat in enumerate(self.encoder.categories_[0])
-        }
+        return dict(zip(range(self.n_classes), self.encoder.classes_))
