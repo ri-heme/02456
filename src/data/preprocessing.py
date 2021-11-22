@@ -1,6 +1,7 @@
 __all__ = ["SnpDataset"]
 
 import pickle
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -33,7 +34,9 @@ class SnpDataset(Dataset):
     n_features : int
         Number of input features
     n_classes : int
-        Number of output classes
+        Number of target classes
+    idx_to_class : dict
+        Mapping of index to target class
     """
 
     def __init__(self, raw_data_path) -> None:
@@ -62,7 +65,10 @@ class SnpDataset(Dataset):
             .dropna()
         )
 
-        input_files = sorted(raw_data_path.joinpath("tensor_data").glob("*.pt"))
+        input_files = sorted(
+            raw_data_path.joinpath("tensor_data").glob("*.pt"),
+            key=lambda path: int(re.search("\d+", path.stem)[0]),
+        )
         if len(input_files) != metadata.shape[0]:
             raise Exception("Number of tensor files does not match number of targets.")
 
@@ -76,19 +82,19 @@ class SnpDataset(Dataset):
 
     def __getitem__(self, idx: int) -> Tuple[torch.FloatTensor, torch.FloatTensor]:
         X, y = self.samples[idx]
-        X = torch.Tensor(torch.load(X)[:, [0]])  # Second dimension is not needed
-        X = torch.nan_to_num(X, nan=0).view(-1)  # Convert NaNs to zeros
+        X = torch.Tensor(torch.load(X).T)  # Second dimension is not needed
+        X = torch.nan_to_num(X, nan=0)  # Convert NaNs to zeros
         y = torch.LongTensor([y])
         return X, y
 
     @property
     def n_features(self) -> int:
-        return len(self[0][0])
+        return self[0][0].numel()
 
     @property
     def n_classes(self) -> int:
         return len(self.encoder.classes_)
 
     @property
-    def idx_to_class(self):
+    def idx_to_class(self) -> dict:
         return dict(zip(range(self.n_classes), self.encoder.classes_))
