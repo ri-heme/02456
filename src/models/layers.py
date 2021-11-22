@@ -13,6 +13,27 @@ import torch.nn.functional as F
 
 
 class LCLayer(lazy.LazyModuleMixin, nn.Linear):
+    """Splits the incoming data into so-called chunks and applies a linear
+    transformation to each chunk.
+
+    Parameters
+    ----------
+    in_chunk_features : int
+        Number of input features per chunk
+    out_chunk_features : int
+        Number of output features per chunk
+    bias : bool, optional
+        Whether an addititve bias can be learned, False by default
+
+    Attributes
+    ----------
+    weight : torch.nn.Parameter
+        Learnable weight of shape (in_chunk_features, num_chunks,
+        out_chunk_features)
+    bias : torch.nn.Parameter
+        Learnable bias of the shape (out_features)
+    """
+
     num_chunks = 0
     padding = 0
 
