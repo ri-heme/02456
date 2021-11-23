@@ -70,12 +70,11 @@ class LCLayer(lazy.LazyModuleMixin, nn.Linear):
                 self.reset_parameters()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        if x.ndim != 3:
-            raise ValueError(
-                """Input should have 3 dimensions corresponding to (batch size, elements, features)."""
-            )
         # 1) Transpose & flatten => (batch size, in features)
-        x = x.transpose(1, 2).flatten(start_dim=1)
+        if x.ndim == 3:
+            x = x.transpose(1, 2).flatten(start_dim=1)
+        if x.ndim != 2:
+            raise ValueError("Input should be 2D (batch size, in features).")
         # 2) Pad
         x = F.pad(x, (0, self.padding, 0, 0))
         # 3) Reshape => (batch size, chunks, in chunk features)
