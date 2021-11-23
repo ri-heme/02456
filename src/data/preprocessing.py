@@ -6,8 +6,10 @@ from pathlib import Path
 
 import pandas as pd
 import torch
+from dotenv import find_dotenv
+from pytorch_lightning import LightningDataModule
+from torch.utils.data import Dataset, DataLoader, random_split
 from sklearn.preprocessing import LabelEncoder
-from torch.utils.data import Dataset
 
 from src._typing import PathLike, Tuple
 
@@ -98,3 +100,36 @@ class SnpDataset(Dataset):
     @property
     def idx_to_class(self) -> dict:
         return dict(zip(range(self.n_classes), self.encoder.classes_))
+
+
+class SnpDataModule(LightningDataModule):
+    def __init__(self, train_size: float = 0.8, test_size: float = 0.15, batch_size=32):
+        super().__init__()
+        if train_size + test_size > 1.0:
+            raise ValueError("Size of train and test split should not exceed 1.0.")
+        self.raw_data_path = Path(find_dotenv()).parent / "data" / "raw"
+        self.train_size = train_size
+        self.test_size = test_size
+        self.val_size = 1 - train_size - test_size
+        self.batch_size = batch_size
+
+    def setup(self, stage: str = None) -> None:
+        full_dataset = SnpDataset(self.raw_data_path)
+        train_size = int(len(full_dataset) * self.train_size)
+        test_size = int(len(full_dataset) * self.test_size)
+        val_size = int(len(full_dataset) * self.val_size)
+        self.train_data, self.test_data, self.val_data = random_split(
+            full_dataset, (train_size, test_size, val_size)
+        )
+
+    def train_dataloader(self) -> DataLoader:
+        return DataLoader(self.train_data, self.batch_size, shuffle=True)
+
+    def test_dataloader(self) -> DataLoader:
+        return DataLoader(self.test_data, self.batch_size)
+
+    def val_dataloader(self) -> DataLoader:
+        return DataLoader(self.val_data, self.batch_size)
+
+    def predict_dataloader(self) -> DataLoader:
+        return self.test_dataloader()
