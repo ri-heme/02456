@@ -1,4 +1,4 @@
-__all__ = ["SnpDataset"]
+__all__ = ["SNPDataset", "SNPDataModule"]
 
 import pickle
 import re
@@ -28,7 +28,7 @@ _METADATA_COLUMNS = [
 ]
 
 
-class SnpDataset(Dataset):
+class SNPDataset(Dataset):
     """SNP dataset.
 
     Attributes
@@ -84,7 +84,7 @@ class SnpDataset(Dataset):
 
     def __getitem__(self, idx: int) -> Tuple[torch.FloatTensor, torch.FloatTensor]:
         X, y = self.samples[idx]
-        X = torch.Tensor(torch.load(X).T)  # Second dimension is not needed
+        X = torch.Tensor(torch.load(X).T)
         X = torch.nan_to_num(X, nan=0)  # Convert NaNs to zeros
         y = torch.LongTensor([y])
         return X, y
@@ -102,7 +102,7 @@ class SnpDataset(Dataset):
         return dict(zip(range(self.n_classes), self.encoder.classes_))
 
 
-class SnpDataModule(LightningDataModule):
+class SNPDataModule(LightningDataModule):
     def __init__(self, train_size: float = 0.8, test_size: float = 0.15, batch_size=32):
         super().__init__()
         if train_size + test_size > 1.0:
@@ -114,7 +114,7 @@ class SnpDataModule(LightningDataModule):
         self.batch_size = batch_size
 
     def setup(self, stage: str = None) -> None:
-        full_dataset = SnpDataset(self.raw_data_path)
+        full_dataset = SNPDataset(self.raw_data_path)
         train_size = int(len(full_dataset) * self.train_size)
         test_size = int(len(full_dataset) * self.test_size)
         val_size = int(len(full_dataset) * self.val_size)

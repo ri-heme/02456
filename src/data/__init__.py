@@ -1,3 +1,3 @@
-__all__ = ["SnpDataset"]
+__all__ = ["SNPDataset", "SNPDataModule"]
 
-from src.data.preprocessing import SnpDataset
+from src.data.preprocessing import SNPDataset, SNPDataModule
