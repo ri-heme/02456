@@ -110,14 +110,14 @@ class SNPDataModule(LightningDataModule):
         self.raw_data_path = Path(find_dotenv()).parent / "data" / "raw"
         self.train_size = train_size
         self.test_size = test_size
-        self.val_size = 1 - train_size - test_size
         self.batch_size = batch_size
 
     def setup(self, stage: str = None) -> None:
         full_dataset = SNPDataset(self.raw_data_path)
-        train_size = int(len(full_dataset) * self.train_size)
-        test_size = int(len(full_dataset) * self.test_size)
-        val_size = int(len(full_dataset) * self.val_size)
+        full_size = len(full_dataset)
+        train_size = int(full_size * self.train_size)
+        test_size = int(full_size * self.test_size)
+        val_size = full_size - train_size - test_size
         self.train_data, self.test_data, self.val_data = random_split(
             full_dataset, (train_size, test_size, val_size)
         )
