@@ -82,7 +82,7 @@ class SNPDataset(Dataset):
     def __len__(self) -> int:
         return len(self.samples)
 
-    def __getitem__(self, idx: int) -> Tuple[torch.FloatTensor, torch.FloatTensor]:
+    def __getitem__(self, idx: int) -> Tuple[torch.FloatTensor, ...]:
         X, y = self.samples[idx]
         X = torch.Tensor(torch.load(X).T)
         # Encode NaNs as [0, 1]
