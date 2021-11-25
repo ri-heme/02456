@@ -4,6 +4,7 @@ import pickle
 import re
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import torch
 from dotenv import find_dotenv
@@ -84,8 +85,10 @@ class SNPDataset(Dataset):
 
     def __getitem__(self, idx: int) -> Tuple[torch.FloatTensor, torch.FloatTensor]:
         X, y = self.samples[idx]
-        X = torch.Tensor(torch.load(X).T)
-        X = torch.nan_to_num(X, nan=0)  # Convert NaNs to zeros
+        X = torch.load(X)
+        nan_idx = np.argwhere(np.isnan(X).all(axis=1))
+        X[nan_idx] = [0, 1]  # Encode NaNs as 0, 1
+        X = torch.Tensor(X.T)
         y = torch.LongTensor([y])
         return X, y
 
