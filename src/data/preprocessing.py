@@ -97,19 +97,22 @@ class SNPDataset(Dataset):
         return X, y
 
     @property
-    def n_features(self) -> int:
+    def num_features(self) -> int:
         return self[0][0].numel()
 
     @property
-    def n_classes(self) -> int:
+    def num_classes(self) -> int:
         return len(self.encoder.classes_)
 
     @property
     def idx_to_class(self) -> dict:
-        return dict(zip(range(self.n_classes), self.encoder.classes_))
+        return dict(zip(range(self.num_classes), self.encoder.classes_))
 
 
 class SNPDataModule(LightningDataModule):
+    num_features = None
+    num_classes = None
+
     def __init__(self, train_size: float = 0.8, test_size: float = 0.15, batch_size=32):
         super().__init__()
         if train_size + test_size > 1.0:
@@ -121,6 +124,8 @@ class SNPDataModule(LightningDataModule):
 
     def setup(self, stage: str = None) -> None:
         full_dataset = SNPDataset(self.raw_data_path)
+        self.num_features = full_dataset.num_features
+        self.num_classes = full_dataset.num_classes
         full_size = len(full_dataset)
         train_size = int(full_size * self.train_size)
         test_size = int(full_size * self.test_size)

@@ -106,7 +106,6 @@ class VAE(pl.LightningModule):
         pz = dist.Normal(torch.zeros_like(mu), torch.ones_like(log_sigma))
         return px, pz, qz, z
 
-################################################################################
     def calculate_elbo(self, x: torch.Tensor) -> torch.Tensor:
         """Compute the ELBO to evaluate the model's performance.
 
