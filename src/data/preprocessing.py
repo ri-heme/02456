@@ -8,6 +8,7 @@ import pandas as pd
 import torch
 from dotenv import find_dotenv
 from pytorch_lightning import LightningDataModule
+from torch.nn.functional import one_hot
 from torch.utils.data import Dataset, DataLoader, random_split
 from sklearn.preprocessing import LabelEncoder
 
@@ -84,9 +85,14 @@ class SNPDataset(Dataset):
 
     def __getitem__(self, idx: int) -> Tuple[torch.FloatTensor, ...]:
         X, y = self.samples[idx]
-        X = torch.Tensor(torch.load(X).T)
-        # Encode NaNs as [0, 1]
-        X[:, torch.isnan(X).all(axis=0)] = torch.Tensor([[0], [1]])  
+        # Encode:
+        # [0, 0] -> [1, 0, 0, 0] 0 SNPs
+        # [0, 1] -> [0, 1, 0, 0] NaNs
+        # [1, 0] -> [0, 0, 1, 0] 1 SNP
+        # [1, 1] -> [0, 0, 0, 1] 2 SNPs
+        X = torch.Tensor([2, 1]) * torch.Tensor(torch.load(X))
+        X = X.sum(axis=1).nan_to_num(nan=1).long()
+        X = one_hot(X).T
         y = torch.LongTensor([y])
         return X, y
 
