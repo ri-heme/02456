@@ -83,7 +83,7 @@ class ShallowNN(pl.LightningModule):
 def main(num_processes, num_units) -> None:
     from pytorch_lightning.plugins import DDPPlugin
 
-    data = SNPDataModule(test_size=0.2, num_processes=num_processes)
+    data = SNPDataModule(val_size=0.2, num_processes=num_processes)
     data.setup(stage="fit")
 
     model = ShallowNN(data.num_features, data.num_classes, num_units)

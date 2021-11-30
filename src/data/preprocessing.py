@@ -116,16 +116,16 @@ class SNPDataModule(LightningDataModule):
     def __init__(
         self,
         train_size: float = 0.8,
-        test_size: float = 0.15,
+        val_size: float = 0.15,
         batch_size=32,
         num_processes=0,
     ):
         super().__init__()
-        if train_size + test_size > 1.0:
+        if train_size + val_size > 1.0:
             raise ValueError("Size of train and test split should not exceed 1.0.")
         self.raw_data_path = Path(find_dotenv()).parent / "data" / "raw"
         self.train_size = train_size
-        self.test_size = test_size
+        self.val_size = val_size
         self.batch_size = batch_size
         self.num_processes = num_processes
 
@@ -135,8 +135,8 @@ class SNPDataModule(LightningDataModule):
         self.num_classes = full_dataset.num_classes
         full_size = len(full_dataset)
         train_size = int(full_size * self.train_size)
-        test_size = int(full_size * self.test_size)
-        val_size = full_size - train_size - test_size
+        val_size = int(full_size * self.val_size)
+        test_size = full_size - train_size - val_size
         self.train_data, self.test_data, self.val_data = random_split(
             full_dataset, (train_size, test_size, val_size)
         )
