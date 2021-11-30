@@ -113,7 +113,13 @@ class SNPDataModule(LightningDataModule):
     num_features = None
     num_classes = None
 
-    def __init__(self, train_size: float = 0.8, test_size: float = 0.15, batch_size=32):
+    def __init__(
+        self,
+        train_size: float = 0.8,
+        test_size: float = 0.15,
+        batch_size=32,
+        num_processes=0,
+    ):
         super().__init__()
         if train_size + test_size > 1.0:
             raise ValueError("Size of train and test split should not exceed 1.0.")
@@ -121,6 +127,7 @@ class SNPDataModule(LightningDataModule):
         self.train_size = train_size
         self.test_size = test_size
         self.batch_size = batch_size
+        self.num_processes = num_processes
 
     def setup(self, stage: str = None) -> None:
         full_dataset = SNPDataset(self.raw_data_path)
@@ -135,13 +142,29 @@ class SNPDataModule(LightningDataModule):
         )
 
     def train_dataloader(self) -> DataLoader:
-        return DataLoader(self.train_data, self.batch_size, shuffle=True)
+        return DataLoader(
+            self.train_data,
+            self.batch_size,
+            num_workers=self.num_processes,
+            persistent_workers=self.num_processes > 0,
+            shuffle=True,
+        )
 
     def test_dataloader(self) -> DataLoader:
-        return DataLoader(self.test_data, self.batch_size)
+        return DataLoader(
+            self.test_data,
+            self.batch_size,
+            num_workers=self.num_processes,
+            persistent_workers=self.num_processes > 0,
+        )
 
     def val_dataloader(self) -> DataLoader:
-        return DataLoader(self.val_data, self.batch_size)
+        return DataLoader(
+            self.val_data,
+            self.batch_size,
+            num_workers=self.num_processes,
+            persistent_workers=self.num_processes > 0,
+        )
 
     def predict_dataloader(self) -> DataLoader:
         return self.test_dataloader()

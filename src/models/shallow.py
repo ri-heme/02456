@@ -1,6 +1,7 @@
 __all__ = ["ShallowNN"]
 
 import click
+from pytorch_lightning import plugins
 import torch
 import torch.nn.functional as F
 import pytorch_lightning as pl
@@ -75,11 +76,14 @@ class ShallowNN(pl.LightningModule):
 
 
 @click.command()
+@click.option("-P", "--num_processes", type=int, default=0, help="Sets # of CPUs.")
 @click.option(
     "-U", "--num_units", type=int, default=2, help="Sets # of units in latent space."
 )
-def main(num_units) -> None:
-    data = SNPDataModule(test_size=0.2)
+def main(num_processes, num_units) -> None:
+    from pytorch_lightning.plugins import DDPPlugin
+
+    data = SNPDataModule(test_size=0.2, num_processes=num_processes)
     data.setup(stage="fit")
 
     model = ShallowNN(data.num_features, data.num_classes, num_units)
@@ -89,10 +93,11 @@ def main(num_units) -> None:
 
     trainer = pl.Trainer(
         logger,
-        devices="auto",
-        accelerator="auto",
+        accelerator="cpu",
+        num_processes=num_processes,
         max_epochs=400,
         callbacks=[early_stopping],
+        plugins=DDPPlugin(find_unused_parameters=False),
     )
     trainer.fit(model, datamodule=data)
 

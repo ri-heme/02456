@@ -32,8 +32,12 @@ class CSVLogger(LightningCSVLogger):
         # Output CSV files have one row for each mode: training/validation
         # Training rows have NaN values in validation columns, and vice versa
         # So this is meant to condense the table by combining rows
+        try:
+            metrics_file_path = Path(self.experiment.metrics_file_path)
+        except TypeError:
+            return
         # 1. Read CSV
-        metrics = pd.read_csv(self.experiment.metrics_file_path)
+        metrics = pd.read_csv(metrics_file_path)
         # 2. Split into train/val dataframes
         train_metrics = metrics.dropna(subset=["train_loss"]).set_index(
             ["epoch", "step"]
