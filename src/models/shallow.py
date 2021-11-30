@@ -76,9 +76,9 @@ class ShallowNN(pl.LightningModule):
 
 
 @click.command()
-@click.option("-P", "--num_processes", type=int, default=0, help="Sets # of CPUs.")
+@click.option("-P", "--num_processes", type=int, default=0, help="Set # of CPUs.")
 @click.option(
-    "-U", "--num_units", type=int, default=2, help="Sets # of units in latent space."
+    "-U", "--num_units", type=int, default=2, help="Set # of units in latent space."
 )
 def main(num_processes, num_units) -> None:
     from pytorch_lightning.plugins import DDPPlugin
