@@ -90,7 +90,7 @@ def main(num_processes, depth, in_features, out_features, dropout, lr) -> None:
 
     model = LCNetwork(depth, in_features, out_features, data.num_classes, dropout, lr)
 
-    logger = CSVLogger("shallow_nn", ["loss", "acc"])
+    logger = CSVLogger("lc_network", ["loss", "acc"])
     early_stopping = pl.callbacks.EarlyStopping(monitor="val_loss")
 
     trainer = pl.Trainer(
