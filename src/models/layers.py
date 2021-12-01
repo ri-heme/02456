@@ -1,4 +1,4 @@
-__all__ = ["LCLayer"]
+__all__ = ["Block", "LCLayer", "LCStack"]
 
 # based on SplitLinear class from Arnór
 # SEE: https://github.com/arnor-sigurdsson/EIR/blob/99baff355e8479e67122e89a901c387acdddaefc/eir/models/layers.py#L235
@@ -10,6 +10,41 @@ import torch
 from torch import nn
 from torch.nn.modules import lazy
 import torch.nn.functional as F
+
+
+class Block(nn.Module):
+    """Block consisting of a linear transformation, SiLU activation function,
+    batch normalization, and dropout layer.
+
+
+    Parameters
+    ----------
+    transform : torch.nn.Module
+        Transformation to be applied to the input, e.g., `torch.nn.Linear`
+    in_features : int
+        Number of input features
+    out_features : int
+        Number of output features
+    dropout_rate : int
+        Probability to randomly dropout output units
+    """
+
+    def __init__(
+        self,
+        transform: nn.Module,
+        in_features: int,
+        out_features: int,
+        dropout_rate: float = 0.0,
+    ):
+        super().__init__()
+        self.block = nn.Sequential(
+            transform(in_features, out_features), nn.SiLU(), nn.LazyBatchNorm1d()
+        )
+        if dropout_rate > 0.0:
+            self.block.add_module("3", nn.Dropout(dropout_rate))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.block(x)
 
 
 class LCLayer(lazy.LazyModuleMixin, nn.Linear):
@@ -88,3 +123,30 @@ class LCLayer(lazy.LazyModuleMixin, nn.Linear):
         if self.bias is not None:
             out += self.bias
         return out
+
+
+class LCStack(nn.Module):
+    """Stack of blocks of configurable depth.
+
+    Parameters
+    ----------
+    depth : int
+        Number of blocks in the stack
+    in_features : int
+        Number of input chunk features of each LC layer
+    out_features : int
+        Number of output chunk features of each LC layer
+    dropout_rate : int
+        Probability to randomly dropout units after each block
+    """
+
+    def __init__(self, depth, in_features, out_features, dropout_rate=0.0):
+        super().__init__()
+        blocks = [
+            Block(LCLayer, in_features, out_features, dropout_rate)
+            for _ in range(depth)
+        ]
+        self.blocks = nn.Sequential(*blocks)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.blocks(x)
