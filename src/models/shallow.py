@@ -9,10 +9,11 @@ from torch import nn
 
 from src.data import SNPDataModule
 from src.models.logger import CSVLogger
-from src._typing import Optimizer, Tuple
+from src.models.prediction import PredictionModel
+from src._typing import Optimizer
 
 
-class ShallowNN(pl.LightningModule):
+class ShallowNN(PredictionModel):
     """Shallow neural network.
 
     Parameters
@@ -38,7 +39,7 @@ class ShallowNN(pl.LightningModule):
             nn.Linear(num_units, num_classes),
             nn.LogSoftmax(dim=1),
         )
-        self.save_hyperparameters("num_units", "lr")
+        self.save_hyperparameters()
 
     def configure_optimizers(self) -> Optimizer:
         """Returns a stochastic gradient descent optimizer with fixed 0.5
@@ -53,26 +54,6 @@ class ShallowNN(pl.LightningModule):
     def forward(self, x: torch.Tensor):
         x = x.float().transpose(dim0=-1, dim1=1).flatten(start_dim=1)
         return self.network(x)
-
-    def calculate_loss(self, batch) -> Tuple[torch.Tensor, float]:
-        x, y = batch
-        logits = self(x)
-        loss = F.nll_loss(logits, y.view(-1))
-        y_pred = torch.argmax(logits, dim=1)
-        accuracy = (y_pred == y).float().mean().item()
-        return loss, accuracy
-
-    def training_step(self, batch, batch_idx) -> torch.Tensor:
-        loss, acc = self.calculate_loss(batch)
-        self.log("train_loss", loss, on_step=False, on_epoch=True)
-        self.log("train_acc", acc, on_step=False, on_epoch=True)
-        return loss
-
-    def validation_step(self, batch, batch_idx) -> torch.Tensor:
-        loss, acc = self.calculate_loss(batch)
-        self.log("val_loss", loss, prog_bar=True)
-        self.log("val_acc", acc, prog_bar=True)
-        return loss
 
 
 @click.command()
