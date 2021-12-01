@@ -37,9 +37,12 @@ class Block(nn.Module):
         dropout_rate: float = 0.0,
     ):
         super().__init__()
-        self.block = nn.Sequential(
-            transform(in_features, out_features), nn.SiLU(), nn.LazyBatchNorm1d()
-        )
+        linear = None
+        if transform.__name__ == "LazyLinear":
+            linear = transform(out_features)
+        else:
+            linear = transform(in_features, out_features)
+        self.block = nn.Sequential(linear, nn.SiLU(), nn.LazyBatchNorm1d())
         if dropout_rate > 0.0:
             self.block.add_module("3", nn.Dropout(dropout_rate))
 
@@ -145,6 +148,29 @@ class LCStack(nn.Module):
         blocks = [
             Block(LCLayer, in_features, out_features, dropout_rate)
             for _ in range(depth)
+        ]
+        self.blocks = nn.Sequential(*blocks)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.blocks(x)
+
+
+class LinearStack(nn.Module):
+    """Stack of blocks of configurable depth.
+
+    Parameters
+    ----------
+    num_units : int
+        Number of output features of each linear layer
+    dropout_rate : int
+        Probability to randomly dropout units after each block
+    """
+
+    def __init__(self, num_units, dropout_rate=0.0):
+        super().__init__()
+        blocks = [
+            Block(nn.LazyLinear, None, out_features, dropout_rate)
+            for out_features in num_units
         ]
         self.blocks = nn.Sequential(*blocks)
 
