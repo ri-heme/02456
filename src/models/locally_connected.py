@@ -82,7 +82,8 @@ class LCNetwork(PredictionModel):
 )
 @click.option("-D", "--dropout", type=float, default=0.0, help="Set dropout rate.")
 @click.option("--lr", type=float, default=1e-4, help="Set learning rate.")
-def main(num_processes, depth, in_features, out_features, dropout, lr) -> None:
+@click.option("-V", "--version", default=None, help="Set experiment version.")
+def main(num_processes, depth, in_features, out_features, dropout, lr, version) -> None:
     from pytorch_lightning.plugins import DDPPlugin
 
     data = SNPDataModule(val_size=0.2, num_processes=num_processes)
@@ -90,7 +91,7 @@ def main(num_processes, depth, in_features, out_features, dropout, lr) -> None:
 
     model = LCNetwork(depth, in_features, out_features, data.num_classes, dropout, lr)
 
-    logger = CSVLogger("lc_network", ["loss", "acc"])
+    logger = CSVLogger("lc_network", version, ["loss", "acc"])
     early_stopping = pl.callbacks.EarlyStopping(monitor="val_loss")
 
     trainer = pl.Trainer(

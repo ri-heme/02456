@@ -61,7 +61,8 @@ class ShallowNN(PredictionModel):
 @click.option(
     "-U", "--num_units", type=int, default=2, help="Set # of units in latent space."
 )
-def main(num_processes, num_units) -> None:
+@click.option("-V", "--version", default=None, help="Set experiment version.")
+def main(num_processes, num_units, version) -> None:
     from pytorch_lightning.plugins import DDPPlugin
 
     data = SNPDataModule(val_size=0.2, num_processes=num_processes)
@@ -69,7 +70,7 @@ def main(num_processes, num_units) -> None:
 
     model = ShallowNN(data.num_features, data.num_classes, num_units)
 
-    logger = CSVLogger("shallow_nn", ["loss", "acc"])
+    logger = CSVLogger("shallow_nn", version, ["loss", "acc"])
     early_stopping = pl.callbacks.EarlyStopping(monitor="val_loss")
 
     trainer = pl.Trainer(

@@ -1,17 +1,16 @@
 __all__ = ["CSVLogger"]
 
 from pathlib import Path
-from datetime import datetime
 
 import pandas as pd
 from pytorch_lightning.loggers import CSVLogger as LightningCSVLogger
 from dotenv import find_dotenv
 
-from src._typing import List
+from src._typing import ExperimentVersion, List
 
 
 class CSVLogger(LightningCSVLogger):
-    """CSV logger that uses dates for versioning.
+    """CSV logger that condenses output metrics file.
 
     Parameters
     ----------
@@ -21,16 +20,19 @@ class CSVLogger(LightningCSVLogger):
         List of metrics tracked by this logger. Used to create the CSV header.
     """
 
-    def __init__(self, name: str, metrics: List[str] = ["loss"]):
+    def __init__(
+        self, name: str, version: ExperimentVersion, metrics: List[str] = ["loss"]
+    ):
         save_dir = Path(find_dotenv()).parent / "models"
-        super().__init__(save_dir, name=name, version=None)
+        super().__init__(save_dir, name=name, version=version)
         self.columns = pd.MultiIndex.from_product([["val", "train"], metrics])
 
     def finalize(self, status: str) -> None:
-        self.save()
         # Output CSV files have one row for each mode: training/validation
         # Training rows have NaN values in validation columns, and vice versa
         # So this is meant to condense the table by combining rows
+        self.save()
+        # Checks if metrics file is ready
         try:
             metrics_file_path = Path(self.experiment.metrics_file_path)
         except TypeError:
@@ -49,7 +51,3 @@ class CSVLogger(LightningCSVLogger):
         metrics = metrics.swaplevel(axis=1)
         # 5. Overwrite
         metrics.to_csv(self.experiment.metrics_file_path)
-
-    def _get_next_version(self) -> str:
-        date = datetime.now()
-        return f"version_{date.year}-{date.month}-{date.day}_{date.hour}-{date.minute}"
