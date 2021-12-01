@@ -24,6 +24,10 @@ class CSVLogger(LightningCSVLogger):
         self, name: str, version: ExperimentVersion, metrics: List[str] = ["loss"]
     ):
         save_dir = Path(find_dotenv()).parent / "models"
+        try:
+            version = int(version)
+        except ValueError:
+            pass
         super().__init__(save_dir, name=name, version=version)
         self.columns = pd.MultiIndex.from_product([["val", "train"], metrics])
 

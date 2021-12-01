@@ -34,10 +34,12 @@ class SNPDataset(Dataset):
 
     Attributes
     ----------
-    n_features : int
+    num_features : int
         Number of input features
-    n_classes : int
+    num_classes : int
         Number of target classes
+    sample_shape : (int, int)
+        Shape of a sample
     idx_to_class : dict
         Mapping of index to target class
     """
@@ -92,9 +94,13 @@ class SNPDataset(Dataset):
         # [1, 1] -> [0, 0, 0, 1] 2 SNPs
         X = torch.Tensor([2, 1]) * torch.Tensor(torch.load(X))
         X = X.sum(axis=1).nan_to_num(nan=1).long()
-        X = one_hot(X).T
+        X = one_hot(X).float().T
         y = torch.LongTensor([y])
         return X, y
+
+    @property
+    def sample_shape(self) -> Tuple[int]:
+        return tuple(self[0][0].shape)
 
     @property
     def num_features(self) -> int:
@@ -133,6 +139,7 @@ class SNPDataModule(LightningDataModule):
         full_dataset = SNPDataset(self.raw_data_path)
         self.num_features = full_dataset.num_features
         self.num_classes = full_dataset.num_classes
+        self.sample_shape = full_dataset.sample_shape
         full_size = len(full_dataset)
         train_size = int(full_size * self.train_size)
         val_size = int(full_size * self.val_size)

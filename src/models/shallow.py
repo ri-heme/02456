@@ -52,7 +52,7 @@ class ShallowNN(PredictionModel):
         return torch.optim.SGD(self.parameters(), lr=self.lr, momentum=0.5)
 
     def forward(self, x: torch.Tensor):
-        x = x.float().transpose(dim0=-1, dim1=1).flatten(start_dim=1)
+        x = x.transpose(dim0=-1, dim1=1).flatten(start_dim=1)
         return self.network(x)
 
 

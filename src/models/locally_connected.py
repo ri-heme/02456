@@ -91,6 +91,10 @@ def main(num_processes, depth, in_features, out_features, dropout, lr, version) 
 
     model = LCNetwork(depth, in_features, out_features, data.num_classes, dropout, lr)
 
+    with torch.no_grad():
+        dummy = torch.ones(data.batch_size, *data.sample_shape)
+        model(dummy)
+
     logger = CSVLogger("lc_network", version, ["loss", "acc"])
     early_stopping = pl.callbacks.EarlyStopping(monitor="val_loss")
 
