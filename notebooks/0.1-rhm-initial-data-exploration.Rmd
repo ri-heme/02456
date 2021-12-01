@@ -1,0 +1,72 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.2'
+      jupytext_version: 1.13.1
+  kernelspec:
+    display_name: Python 3 (ipykernel)
+    language: python
+    name: python3
+---
+
+```{python}
+# %load_ext autoreload
+# %autoreload 2
+```
+
+# Initial Data Exploration
+
+## Linear Model
+
+In this notebook, we show the results of the shallow neural network, trained over 400 epochs with different hyperparameters. This model predicts the label (ancestry) of a sample (individual) with a very low accuracy.
+
+```{python}
+from pathlib import Path
+
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+from dotenv import find_dotenv
+from pytorch_lightning.core.saving import load_hparams_from_yaml
+```
+
+```{python}
+def plot_metrics(model_name: str, metrics_path: Path, hparams_path: Path, figsize: tuple):
+    
+    metrics = pd.read_csv(metrics_path, index_col=[0, 1], header=[0, 1])
+    hparams = load_hparams_from_yaml(hparams_path)
+    cols = tuple(metrics.columns.levels[0])
+    
+    fig, axs = plt.subplots(ncols=len(cols), figsize=figsize)
+    
+    for i, col in enumerate(cols):
+        plot_data = metrics[col].reset_index(level=1, drop=True)
+        sns.lineplot(data=plot_data, ax=axs[i])
+        axs[i].set_ylabel(col)
+    
+    title = model_name + ", " + str(hparams)[1:-1].replace("'", "")
+    fig.suptitle(title)
+```
+
+```{python}
+models_path = Path(find_dotenv()).parent / "models"
+
+name = "shallow_nn"
+model_path = models_path / name
+
+experiment_paths = list(model_path.glob("*"))
+
+for experiment_path in experiment_paths:
+    metrics_path = experiment_path / "metrics.csv"
+    hparams_path = experiment_path / "hparams.yaml"
+    
+    plot_metrics(name, metrics_path, hparams_path, (10, 4))
+```
+
+```{python}
+
+```
