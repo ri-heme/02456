@@ -8,6 +8,7 @@ import pytorch_lightning as pl
 from torch import nn
 
 from src.data import SNPDataModule
+from src.models.layers import make_2d
 from src.models.logger import CSVLogger
 from src.models.prediction import PredictionModel
 from src._typing import Optimizer
@@ -51,8 +52,8 @@ class ShallowNN(PredictionModel):
         """
         return torch.optim.SGD(self.parameters(), lr=self.lr, momentum=0.5)
 
+    @make_2d
     def forward(self, x: torch.Tensor):
-        x = x.transpose(dim0=-1, dim1=1).flatten(start_dim=1)
         return self.network(x)
 
 

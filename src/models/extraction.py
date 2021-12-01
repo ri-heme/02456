@@ -7,6 +7,7 @@ import torch.distributions as dist
 import pytorch_lightning as pl
 
 from src._typing import Tuple, Optimizer
+from src.models.layers import make_2d
 
 
 class BaseVAE(pl.LightningModule):
@@ -60,6 +61,7 @@ class BaseVAE(pl.LightningModule):
         px = dist.Normal(x_hat, torch.ones(1))
         return px
 
+    @make_2d
     def forward(
         self, x: torch.Tensor
     ) -> Tuple[dist.Normal, dist.Normal, dist.Normal, torch.Tensor]:
@@ -109,6 +111,7 @@ class BaseVAE(pl.LightningModule):
         self.log("val_loss", loss, prog_bar=True)
         return loss
 
+    @make_2d
     def project(self, x: torch.Tensor) -> np.ndarray:
         """Projects input into a low-dimensional representation.
 
