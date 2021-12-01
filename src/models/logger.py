@@ -12,7 +12,7 @@ from src._typing import List
 
 class CSVLogger(LightningCSVLogger):
     """CSV logger that uses dates for versioning.
-    
+
     Parameters
     ----------
     name : str
@@ -20,9 +20,8 @@ class CSVLogger(LightningCSVLogger):
     metrics : list of str
         List of metrics tracked by this logger. Used to create the CSV header.
     """
-    def __init__(
-        self, name: str, metrics: List[str] = ["loss"]
-    ):
+
+    def __init__(self, name: str, metrics: List[str] = ["loss"]):
         save_dir = Path(find_dotenv()).parent / "models"
         super().__init__(save_dir, name=name, version=None)
         self.columns = pd.MultiIndex.from_product([["val", "train"], metrics])

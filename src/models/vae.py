@@ -99,7 +99,9 @@ class VAE(pl.LightningModule):
         px = dist.Normal(x_hat, torch.ones(1))
         return px
 
-    def forward(self, x: torch.Tensor) -> Tuple[dist.Normal, dist.Normal, dist.Normal, torch.Tensor]:
+    def forward(
+        self, x: torch.Tensor
+    ) -> Tuple[dist.Normal, dist.Normal, dist.Normal, torch.Tensor]:
         mu, log_sigma = self.encode(x)
         z, qz = self.reparametrize(mu, log_sigma)
         px = self.decode(z)
