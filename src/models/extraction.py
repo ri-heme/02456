@@ -1,6 +1,7 @@
 __all__ = ["BaseVAE"]
 
 
+import numpy as np
 import torch
 import torch.distributions as dist
 import pytorch_lightning as pl
@@ -107,3 +108,19 @@ class BaseVAE(pl.LightningModule):
         loss = self.calculate_elbo(x)
         self.log("val_loss", loss, prog_bar=True)
         return loss
+
+    def project(self, x: torch.Tensor) -> np.ndarray:
+        """Projects input into a low-dimensional representation.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+
+        Returns
+        -------
+        z : np.ndarray
+        """
+        with torch.no_grad():
+            mu, log_sigma = self.encode(x)
+            _, z = self.reparametrize(mu, log_sigma)
+            return z.numpy()
