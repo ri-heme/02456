@@ -92,7 +92,7 @@ class SNPDataset(Dataset):
         # [1, 1] -> [0, 0, 0, 1] 2 SNPs
         X = torch.Tensor([2, 1]) * torch.Tensor(torch.load(X))
         X = X.sum(axis=1).nan_to_num(nan=1).long()
-        X = one_hot(X).T
+        X = one_hot(X).float().T
         y = torch.LongTensor([y])
         return X, y
 
