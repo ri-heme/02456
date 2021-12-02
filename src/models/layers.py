@@ -1,15 +1,24 @@
-__all__ = ["Block", "LCLayer", "LCStack"]
+__all__ = ["Block", "LCLayer", "LCStack", "make_2d"]
 
-# based on SplitLinear class from Arnór
-# SEE: https://github.com/arnor-sigurdsson/EIR/blob/99baff355e8479e67122e89a901c387acdddaefc/eir/models/layers.py#L235
-
-
+from functools import wraps
 from math import ceil
 
 import torch
 from torch import nn
 from torch.nn.modules import lazy
 import torch.nn.functional as F
+
+
+def make_2d(method):
+    """Flattens 3D input, conserving batch size dimension."""
+
+    @wraps(method)
+    def decorator(self, x: torch.Tensor):
+        if x.ndim == 3:
+            x = x.transpose(dim0=-1, dim1=1).flatten(start_dim=1)
+        return method(self, x)
+
+    return decorator
 
 
 class Block(nn.Module):
@@ -37,9 +46,12 @@ class Block(nn.Module):
         dropout_rate: float = 0.0,
     ):
         super().__init__()
-        self.block = nn.Sequential(
-            transform(in_features, out_features), nn.SiLU(), nn.LazyBatchNorm1d()
-        )
+        linear = None
+        if transform.__name__ == "LazyLinear":
+            linear = transform(out_features)
+        else:
+            linear = transform(in_features, out_features)
+        self.block = nn.Sequential(linear, nn.SiLU(), nn.LazyBatchNorm1d())
         if dropout_rate > 0.0:
             self.block.add_module("3", nn.Dropout(dropout_rate))
 
@@ -68,9 +80,8 @@ class LCLayer(lazy.LazyModuleMixin, nn.Linear):
     bias : torch.nn.Parameter
         Learnable bias of the shape (out_features)
     """
-
-    num_chunks = 0
-    padding = 0
+    # based on SplitLinear class from Arnór
+    # SEE: https://github.com/arnor-sigurdsson/EIR/blob/master/eir/models/layers.py
 
     def __init__(
         self, in_chunk_features: int, out_chunk_features: int, bias: bool = False
@@ -104,12 +115,9 @@ class LCLayer(lazy.LazyModuleMixin, nn.Linear):
                     self.bias.materialize((self.out_features))
                 self.reset_parameters()
 
+    @make_2d
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # 1) Transpose & flatten => (batch size, in features)
-        if x.ndim == 3:
-            x = x.transpose(1, 2).flatten(start_dim=1)
-        if x.ndim != 2:
-            raise ValueError("Input should be 2D (batch size, in features).")
         # 2) Pad
         x = F.pad(x, (0, self.padding, 0, 0))
         # 3) Reshape => (batch size, chunks, in chunk features)
@@ -145,6 +153,29 @@ class LCStack(nn.Module):
         blocks = [
             Block(LCLayer, in_features, out_features, dropout_rate)
             for _ in range(depth)
+        ]
+        self.blocks = nn.Sequential(*blocks)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.blocks(x)
+
+
+class LinearStack(nn.Module):
+    """Stack of blocks of configurable depth.
+
+    Parameters
+    ----------
+    num_units : int
+        Number of output features of each linear layer
+    dropout_rate : int
+        Probability to randomly dropout units after each block
+    """
+
+    def __init__(self, num_units, dropout_rate=0.0):
+        super().__init__()
+        blocks = [
+            Block(nn.LazyLinear, None, out_features, dropout_rate)
+            for out_features in num_units
         ]
         self.blocks = nn.Sequential(*blocks)
 

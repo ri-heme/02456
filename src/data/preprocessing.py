@@ -3,6 +3,7 @@ __all__ = ["SNPDataset", "SNPDataModule"]
 import pickle
 import re
 from pathlib import Path
+from typing import Dict
 
 import pandas as pd
 import torch
@@ -111,7 +112,7 @@ class SNPDataset(Dataset):
         return len(self.encoder.classes_)
 
     @property
-    def idx_to_class(self) -> dict:
+    def idx_to_class(self) -> Dict[int, str]:
         return dict(zip(range(self.num_classes), self.encoder.classes_))
 
 
@@ -140,6 +141,7 @@ class SNPDataModule(LightningDataModule):
         self.num_features = full_dataset.num_features
         self.num_classes = full_dataset.num_classes
         self.sample_shape = full_dataset.sample_shape
+        self.idx_to_class = full_dataset.idx_to_class
         full_size = len(full_dataset)
         train_size = int(full_size * self.train_size)
         val_size = int(full_size * self.val_size)
@@ -174,4 +176,4 @@ class SNPDataModule(LightningDataModule):
         )
 
     def predict_dataloader(self) -> DataLoader:
-        return self.test_dataloader()
+        return DataLoader(self.test_data, len(self.test_data))

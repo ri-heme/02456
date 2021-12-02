@@ -2,13 +2,14 @@ __all__ = ["LCNetwork"]
 
 import click
 import torch
-import pytorch_lightning as pl
 from torch import nn
 
 from src.data import SNPDataModule
 from src.models.layers import LCStack
 from src.models.logger import CSVLogger
 from src.models.prediction import PredictionModel
+from src.models.training import train_model
+from src.visualization import plot_metrics
 from src._typing import Optimizer
 
 
@@ -84,29 +85,18 @@ class LCNetwork(PredictionModel):
 @click.option("--lr", type=float, default=1e-4, help="Set learning rate.")
 @click.option("-V", "--version", default=None, help="Set experiment version.")
 def main(num_processes, depth, in_features, out_features, dropout, lr, version) -> None:
-    from pytorch_lightning.plugins import DDPPlugin
-
+    # Setup data and model
     data = SNPDataModule(val_size=0.2, num_processes=num_processes)
     data.setup(stage="fit")
 
     model = LCNetwork(depth, in_features, out_features, data.num_classes, dropout, lr)
 
-    with torch.no_grad():
-        dummy = torch.ones(data.batch_size, *data.sample_shape)
-        model(dummy)
-
+    # Train model
     logger = CSVLogger("lc_network", version, ["loss", "acc"])
-    early_stopping = pl.callbacks.EarlyStopping(monitor="val_loss")
+    train_model(model, data, logger, num_processes, model_is_lazy=True)
 
-    trainer = pl.Trainer(
-        logger,
-        accelerator="cpu",
-        num_processes=num_processes,
-        max_epochs=400,
-        callbacks=[early_stopping],
-        plugins=DDPPlugin(find_unused_parameters=False),
-    )
-    trainer.fit(model, datamodule=data)
+    # Plot metrics
+    plot_metrics(logger, (10, 4))
 
 
 if __name__ == "__main__":

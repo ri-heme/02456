@@ -75,13 +75,10 @@ target/
 # Jupyter NB
 *.ipynb
 .ipynb_checkpoints/
+notebooks/lightning_logs/
 
 # exclude data from source control by default
 /data/
-
-# exclude results and Pytorch Lightning logs
-/results/
-notebooks/lightning_logs/
 
 # Mac OS-specific storage files
 .DS_Store
