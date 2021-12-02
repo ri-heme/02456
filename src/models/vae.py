@@ -11,6 +11,7 @@ from src.models.extraction import BaseVAE
 from src.models.layers import LinearStack
 from src.models.logger import CSVLogger
 from src._typing import List
+from src.models.training import train_model
 from src.visualization.metrics import plot_metrics
 from src.visualization.projection import plot_projection
 
@@ -74,30 +75,13 @@ class VAE(BaseVAE):
 def main(num_processes, latent_features, num_units, dropout, lr, version) -> None:
     from pytorch_lightning.plugins import DDPPlugin
 
-    data = SNPDataModule(val_size=0.2, num_processes=num_processes)
+    data = SNPDataModule(num_processes=num_processes)
     data.setup(stage="fit")
 
     model = VAE(data.num_features, latent_features, num_units, dropout, lr)
 
-    # Materialize weights of lazy layers
-    with torch.no_grad():
-        dummy = torch.ones(data.batch_size, *data.sample_shape)
-        model(dummy)
-
-    # Set up CSV logger and early stopping
-    logger = CSVLogger("vae", version)
-    early_stopping = pl.callbacks.EarlyStopping(monitor="val_loss")
-
-    # Train
-    trainer = pl.Trainer(
-        logger,
-        accelerator="cpu",
-        num_processes=num_processes,
-        max_epochs=400,
-        callbacks=[early_stopping],
-        plugins=DDPPlugin(find_unused_parameters=False),
-    )
-    trainer.fit(model, datamodule=data)
+    # Train model
+    logger = train_model(model, data, version, num_processes, True)
 
     # Plot metrics
     plot_metrics(logger, (5, 4))
