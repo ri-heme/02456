@@ -4,17 +4,25 @@ from pathlib import Path
 
 import pandas as pd
 import matplotlib.pyplot as plt
-from pytorch_lightning.core import saving
 import seaborn as sns
 
-from src.models import CSVLogger
-from src._typing import PathLike, Tuple
+from src.models.logger import CSVLogger
+from src._typing import Tuple
 
 
 METRICS_FIG_FILENAME = "metrics.png"
 
 
 def plot_metrics(logger: CSVLogger, figsize: Tuple[int]):
+    """Plots training/validation metrics.
+
+    Parameters
+    ----------
+    logger : src.models.CSVLogger
+        Logger object used to train model
+    figsize : tuple of int
+        Tuple of plot's (width, height) in inches
+    """
     metrics = pd.read_csv(
         logger.experiment.metrics_file_path, index_col=[0, 1], header=[0, 1]
     )

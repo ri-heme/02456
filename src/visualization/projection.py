@@ -1,7 +1,8 @@
 __all__ = ["plot_projection"]
 
+from os import PathLike
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Union
 
 import numpy as np
 import pandas as pd
@@ -16,10 +17,26 @@ PROJECTION_FILENAME = "projection.png"
 
 
 def plot_projection(
-    logger: CSVLogger, y: torch.Tensor, z: np.ndarray, idx_to_class: Dict[int, str]
+    logger_or_path: Union[CSVLogger, PathLike],
+    y: torch.Tensor,
+    z: np.ndarray,
+    idx_to_class: Dict[int, str],
 ):
+    """Generates a projection plot.
+
+    Parameters
+    ----------
+    logger_or_path : CSVLogger or PathLike
+        Logger or filename path for output plot
+    y : torch.Tensor
+        Targets vector
+    z : np.ndarray
+        Low-dimensional representation of features
+    idx_to_class : dict
+        Mapping of target indices to labels
+    """
     fig, (ax, legend_ax) = plt.subplots(ncols=2, gridspec_kw={"width_ratios": [4, 1]})
-    palette = sns.color_palette("Set3", 13)
+    palette = sns.color_palette("Paired", 13)
 
     y = y.numpy().reshape(-1)
     for idx in range(y.max()):
@@ -40,4 +57,8 @@ def plot_projection(
     ax.set_title("z")
 
     fig.tight_layout()
-    fig.savefig(Path(logger.log_dir, PROJECTION_FILENAME), bbox_inches="tight")
+    if isinstance(logger_or_path, CSVLogger):
+        projection_filepath = Path(logger_or_path.log_dir, PROJECTION_FILENAME)
+    else:
+        projection_filepath = logger_or_path
+    fig.savefig(projection_filepath, bbox_inches="tight")
