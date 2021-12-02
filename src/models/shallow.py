@@ -7,6 +7,7 @@ from torch import nn
 
 from src.data import SNPDataModule
 from src.models.layers import make_2d
+from src.models.logger import CSVLogger
 from src.models.prediction import PredictionModel
 from src.models.training import train_model
 from src.visualization import plot_metrics
@@ -69,8 +70,9 @@ def main(num_processes, num_units, version) -> None:
 
     model = ShallowNN(data.num_features, data.num_classes, num_units)
 
-    # Train model
-    logger = train_model(model, data, version, num_processes)
+    # Train model    
+    logger = CSVLogger("shallow_nn", version, ["loss", "acc"])
+    train_model(model, data, logger, num_processes)
 
     # Plot metrics
     plot_metrics(logger, (10, 4))

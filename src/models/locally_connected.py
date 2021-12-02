@@ -6,6 +6,7 @@ from torch import nn
 
 from src.data import SNPDataModule
 from src.models.layers import LCStack
+from src.models.logger import CSVLogger
 from src.models.prediction import PredictionModel
 from src.models.training import train_model
 from src.visualization import plot_metrics
@@ -91,7 +92,8 @@ def main(num_processes, depth, in_features, out_features, dropout, lr, version) 
     model = LCNetwork(depth, in_features, out_features, data.num_classes, dropout, lr)
 
     # Train model
-    logger = train_model(model, data, version, num_processes, True)
+    logger = CSVLogger("lc_network", version, ["loss", "acc"])
+    train_model(model, data, logger, num_processes, model_is_lazy=True)
 
     # Plot metrics
     plot_metrics(logger, (10, 4))

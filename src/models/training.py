@@ -12,18 +12,17 @@ from src._typing import ExperimentVersion
 def train_model(
     model: pl.LightningModule,
     datamodule: pl.LightningDataModule,
-    version: ExperimentVersion = None,
+    logger: CSVLogger,
     num_processes: int = 1,
     model_is_lazy: bool = False
-) -> CSVLogger:
+) -> None:
     # Materialize weights of lazy layers
     if model_is_lazy:
         with torch.no_grad():
             dummy = torch.ones(datamodule.batch_size, *datamodule.sample_shape)
             model(dummy)
 
-    # Set up CSV logger and early stopping
-    logger = CSVLogger("shallow_nn", version, ["loss", "acc"])
+    # Set up early stopping
     early_stopping = pl.callbacks.EarlyStopping(monitor="val_loss")
 
     # Train
@@ -36,5 +35,3 @@ def train_model(
         plugins=DDPPlugin(find_unused_parameters=False),
     )
     trainer.fit(model, datamodule=datamodule)
-
-    return logger

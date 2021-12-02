@@ -80,7 +80,8 @@ def main(num_processes, latent_features, num_units, dropout, lr, version) -> Non
     model = VAE(data.num_features, latent_features, num_units, dropout, lr)
 
     # Train model
-    logger = train_model(model, data, version, num_processes, True)
+    logger = CSVLogger("vae", version)
+    train_model(model, data, logger, num_processes, model_is_lazy=True)
 
     # Plot metrics
     plot_metrics(logger, (5, 4))
