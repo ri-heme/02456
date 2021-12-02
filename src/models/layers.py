@@ -1,8 +1,5 @@
 __all__ = ["Block", "LCLayer", "LCStack", "make_2d"]
 
-# based on SplitLinear class from Arnór
-# SEE: https://github.com/arnor-sigurdsson/EIR/blob/99baff355e8479e67122e89a901c387acdddaefc/eir/models/layers.py#L235
-
 from functools import wraps
 from math import ceil
 
@@ -83,9 +80,8 @@ class LCLayer(lazy.LazyModuleMixin, nn.Linear):
     bias : torch.nn.Parameter
         Learnable bias of the shape (out_features)
     """
-
-    num_chunks = 0
-    padding = 0
+    # based on SplitLinear class from Arnór
+    # SEE: https://github.com/arnor-sigurdsson/EIR/blob/master/eir/models/layers.py
 
     def __init__(
         self, in_chunk_features: int, out_chunk_features: int, bias: bool = False

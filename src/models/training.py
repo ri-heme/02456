@@ -5,8 +5,6 @@ import pytorch_lightning as pl
 from pytorch_lightning.plugins import DDPPlugin
 
 from src.models.logger import CSVLogger
-from src.visualization import plot_metrics
-from src._typing import ExperimentVersion
 
 
 def train_model(
@@ -16,6 +14,20 @@ def train_model(
     num_processes: int = 1,
     model_is_lazy: bool = False
 ) -> None:
+    """Automatically trains a model.
+
+    Parameters
+    ----------
+    model : pytorch_lightning.LightningModule
+    datamodule : pytorch_lightning.LightningDataModule
+    logger : src.models.logger.CSVLogger
+    num_processes : int, optional
+        Number of CPUs to train with, by default 1
+    model_is_lazy : bool, optional
+        Whether model implements lazy layers that need to be initialized, by
+        default False
+    """
+
     # Materialize weights of lazy layers
     if model_is_lazy:
         with torch.no_grad():

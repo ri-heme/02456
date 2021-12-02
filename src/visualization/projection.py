@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Dict, Union
 
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -26,8 +25,8 @@ def plot_projection(
 
     Parameters
     ----------
-    logger_or_path : CSVLogger or PathLike
-        Logger or filename path for output plot
+    logger_or_path : src.models.logger.CSVLogger or os.PathLike
+        Logger object or file path to save plot as
     y : torch.Tensor
         Targets vector
     z : np.ndarray
