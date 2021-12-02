@@ -73,8 +73,7 @@ class VAE(BaseVAE):
 @click.option("--lr", type=float, default=1e-4, help="Set learning rate.")
 @click.option("-V", "--version", default=None, help="Set experiment version.")
 def main(num_processes, latent_features, num_units, dropout, lr, version) -> None:
-    from pytorch_lightning.plugins import DDPPlugin
-
+    # Setup data and model
     data = SNPDataModule(num_processes=num_processes)
     data.setup(stage="fit")
 
