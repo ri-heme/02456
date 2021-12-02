@@ -1,11 +1,18 @@
 __all__ = ["VAE"]
 
+import click
 import torch
+import pytorch_lightning as pl
 from torch import nn
 
+from src.data import SNPDataModule
+from src.models import logger
 from src.models.extraction import BaseVAE
-from src.models.layers import Block, LinearStack
+from src.models.layers import LinearStack
+from src.models.logger import CSVLogger
 from src._typing import List
+from src.visualization.metrics import plot_metrics
+from src.visualization.projection import plot_projection
 
 
 class VAE(BaseVAE):
@@ -43,6 +50,63 @@ class VAE(BaseVAE):
         )
         self.lr = lr
 
-    def calculate_elbo(self, x: torch.Tensor) -> torch.Tensor:
-        x = x.transpose(dim0=-1, dim1=1).flatten(start_dim=1)
-        return super().calculate_elbo(x)
+
+@click.command()
+@click.option("-P", "--num_processes", type=int, default=0, help="Set # of CPUs.")
+@click.option(
+    "-L",
+    "--latent_features",
+    type=int,
+    default=2,
+    help="Set # of latent features.",
+)
+@click.option(
+    "-U",
+    "--num_units",
+    type=int,
+    multiple=True,
+    default=[256, 128],
+    help="Set # of units per linear layer.",
+)
+@click.option("-D", "--dropout", type=float, default=0.0, help="Set dropout rate.")
+@click.option("--lr", type=float, default=1e-4, help="Set learning rate.")
+@click.option("-V", "--version", default=None, help="Set experiment version.")
+def main(num_processes, latent_features, num_units, dropout, lr, version) -> None:
+    from pytorch_lightning.plugins import DDPPlugin
+
+    data = SNPDataModule(val_size=0.2, num_processes=num_processes)
+    data.setup(stage="fit")
+
+    model = VAE(data.num_features, latent_features, num_units, dropout, lr)
+
+    # Materialize weights of lazy layers
+    with torch.no_grad():
+        dummy = torch.ones(data.batch_size, *data.sample_shape)
+        model(dummy)
+
+    # Set up CSV logger and early stopping
+    logger = CSVLogger("vae", version)
+    early_stopping = pl.callbacks.EarlyStopping(monitor="val_loss")
+
+    # Train
+    trainer = pl.Trainer(
+        logger,
+        accelerator="cpu",
+        num_processes=num_processes,
+        max_epochs=400,
+        callbacks=[early_stopping],
+        plugins=DDPPlugin(find_unused_parameters=False),
+    )
+    trainer.fit(model, datamodule=data)
+
+    # Plot metrics
+    plot_metrics(logger, (5, 4))
+
+    # Project and plot
+    x, y = next(iter(data.predict_dataloader()))
+    z = model.project(x)
+    plot_projection(logger, y, z, data.idx_to_class)
+
+
+if __name__ == "__main__":
+    main()
