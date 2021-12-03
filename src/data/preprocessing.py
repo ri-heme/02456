@@ -2,8 +2,9 @@ __all__ = ["SNPDataset", "SNPDataModule"]
 
 import pickle
 import re
+from os import PathLike
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional, Tuple
 
 import pandas as pd
 import torch
@@ -12,8 +13,6 @@ from pytorch_lightning import LightningDataModule
 from torch.nn.functional import one_hot
 from torch.utils.data import Dataset, DataLoader, random_split
 from sklearn.preprocessing import LabelEncoder
-
-from src._typing import PathLike, Tuple
 
 _METADATA_COLUMNS = [
     "index",
@@ -28,6 +27,9 @@ _METADATA_COLUMNS = [
     "SNP_cov3",
     "ancestry",
 ]
+
+def find_raw_data_path() -> PathLike:
+    return Path(find_dotenv()).parent / "data" / "raw" 
 
 
 class SNPDataset(Dataset):
@@ -45,7 +47,9 @@ class SNPDataset(Dataset):
         Mapping of index to target class
     """
 
-    def __init__(self, raw_data_path) -> None:
+    def __init__(self, raw_data_path: Optional[PathLike] = None) -> None:
+        if raw_data_path is None:
+            raw_data_path = find_raw_data_path()
         self._read_data(raw_data_path)
 
     def _read_data(self, raw_data_path: PathLike) -> None:
@@ -130,7 +134,7 @@ class SNPDataModule(LightningDataModule):
         super().__init__()
         if train_size + val_size > 1.0:
             raise ValueError("Size of train and test split should not exceed 1.0.")
-        self.raw_data_path = Path(find_dotenv()).parent / "data" / "raw"
+        self.raw_data_path = find_raw_data_path()
         self.train_size = train_size
         self.val_size = val_size
         self.batch_size = batch_size
