@@ -1,9 +1,9 @@
 __all__ = ["ShallowNN"]
 
 import click
-from pytorch_lightning import plugins
 import torch
 from torch import nn
+from torch.optim import Optimizer
 
 from src.data import SNPDataModule
 from src.models.layers import make_2d
@@ -11,7 +11,6 @@ from src.models.logger import CSVLogger
 from src.models.prediction import PredictionModel
 from src.models.training import train_model
 from src.visualization import plot_metrics
-from src._typing import Optimizer
 
 
 class ShallowNN(PredictionModel):
@@ -70,7 +69,7 @@ def main(num_processes, num_units, version) -> None:
 
     model = ShallowNN(data.num_features, data.num_classes, num_units)
 
-    # Train model    
+    # Train model
     logger = CSVLogger("shallow_nn", version, ["loss", "acc"])
     train_model(model, data, logger, num_processes)
 

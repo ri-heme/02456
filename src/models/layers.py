@@ -80,6 +80,7 @@ class LCLayer(lazy.LazyModuleMixin, nn.Linear):
     bias : torch.nn.Parameter
         Learnable bias of the shape (out_features)
     """
+
     # based on SplitLinear class from Arnór
     # SEE: https://github.com/arnor-sigurdsson/EIR/blob/master/eir/models/layers.py
 

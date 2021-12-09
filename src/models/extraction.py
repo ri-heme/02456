@@ -1,12 +1,13 @@
 __all__ = ["BaseVAE"]
 
+from typing import Tuple
 
 import numpy as np
 import torch
 import torch.distributions as dist
 import pytorch_lightning as pl
+from torch.optim import Optimizer
 
-from src._typing import Tuple, Optimizer
 from src.models.layers import make_2d
 
 

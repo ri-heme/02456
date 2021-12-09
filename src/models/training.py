@@ -12,7 +12,7 @@ def train_model(
     datamodule: pl.LightningDataModule,
     logger: CSVLogger,
     num_processes: int = 1,
-    model_is_lazy: bool = False
+    model_is_lazy: bool = False,
 ) -> None:
     """Automatically trains a model.
 
