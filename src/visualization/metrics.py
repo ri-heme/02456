@@ -1,19 +1,19 @@
 __all__ = ["plot_metrics"]
 
 from pathlib import Path
+from typing import Tuple
 
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 from src.models.logger import CSVLogger
-from src._typing import Tuple
 
 
 METRICS_FIG_FILENAME = "metrics.png"
 
 
-def plot_metrics(logger: CSVLogger, figsize: Tuple[int]):
+def plot_metrics(logger: CSVLogger, figsize: Tuple[int]) -> None:
     """Plots training/validation metrics.
 
     Parameters
@@ -38,4 +38,5 @@ def plot_metrics(logger: CSVLogger, figsize: Tuple[int]):
     hparams_fmt = str(hparams).replace("'", "")[1:-1]
     title = f"{logger.name}, {hparams_fmt}"
     fig.suptitle(title)
-    fig.savefig(Path(logger.log_dir, METRICS_FIG_FILENAME))
+    fig.tight_layout(rect=[0, 0, 1, 0.9])
+    fig.savefig(Path(logger.log_dir, METRICS_FIG_FILENAME), bbox_inches="tight")
