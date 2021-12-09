@@ -1,16 +1,14 @@
 __all__ = ["VAE"]
 
+from typing import List
+
 import click
-import torch
-import pytorch_lightning as pl
 from torch import nn
 
-from src.data import SNPDataModule
-from src.models import logger
+from src.data.preprocessing import SNPDataModule
 from src.models.extraction import BaseVAE
 from src.models.layers import LinearStack
 from src.models.logger import CSVLogger
-from src._typing import List
 from src.models.training import train_model
 from src.visualization.metrics import plot_metrics
 from src.visualization.projection import plot_projection
@@ -50,6 +48,7 @@ class VAE(BaseVAE):
             nn.LazyLinear(observation_features),
         )
         self.lr = lr
+        self.save_hyperparameters()
 
 
 @click.command()
