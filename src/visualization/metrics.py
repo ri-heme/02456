@@ -27,7 +27,7 @@ def plot_metrics(logger: CSVLogger, figsize: Tuple[int]):
         logger.experiment.metrics_file_path, index_col=[0, 1], header=[0, 1]
     )
     hparams = logger.experiment.hparams
-    colnames = tuple(metrics.columns.get_level_values(0))
+    colnames = tuple(metrics.columns.get_level_values(0).unique())
 
     fig, axs = plt.subplots(ncols=len(colnames), figsize=figsize)
     for ax, colname in zip(axs, colnames):
