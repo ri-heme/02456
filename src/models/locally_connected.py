@@ -3,14 +3,14 @@ __all__ = ["LCNetwork"]
 import click
 import torch
 from torch import nn
+from torch.optim import Optimizer
 
-from src.data import SNPDataModule
+from src.data.preprocessing import SNPDataModule
 from src.models.layers import LCStack
 from src.models.logger import CSVLogger
 from src.models.prediction import PredictionModel
 from src.models.training import train_model
 from src.visualization import plot_metrics
-from src._typing import Optimizer
 
 
 class LCNetwork(PredictionModel):

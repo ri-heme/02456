@@ -1,12 +1,13 @@
 __all__ = ["CSVLogger"]
 
 from pathlib import Path
+from typing import List, Union
 
 import pandas as pd
 from pytorch_lightning.loggers import CSVLogger as LightningCSVLogger
 from dotenv import find_dotenv
 
-from src._typing import ExperimentVersion, List
+ExperimentVersion = Union[int, str, None]
 
 
 class CSVLogger(LightningCSVLogger):

@@ -1,12 +1,13 @@
 __all__ = ["BaseVAE"]
 
+from typing import Tuple
 
 import numpy as np
 import torch
 import torch.distributions as dist
 import pytorch_lightning as pl
+from torch.optim import Optimizer
 
-from src._typing import Tuple, Optimizer
 from src.models.layers import make_2d
 
 
@@ -71,6 +72,7 @@ class BaseVAE(pl.LightningModule):
         pz = dist.Normal(torch.zeros_like(mu), torch.ones_like(log_sigma))
         return px, pz, qz, z
 
+    @make_2d
     def calculate_elbo(self, x: torch.Tensor) -> torch.Tensor:
         """Compute the ELBO to evaluate the model's performance.
 

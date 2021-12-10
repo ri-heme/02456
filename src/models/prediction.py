@@ -1,11 +1,10 @@
 __all__ = ["PredictionModel"]
 
+from typing import Tuple
 
 import torch
 import torch.nn.functional as F
 import pytorch_lightning as pl
-
-from src._typing import Tuple
 
 
 class PredictionModel(pl.LightningModule):
