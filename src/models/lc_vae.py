@@ -103,6 +103,7 @@ class LCVAE(BaseVAE):
             LCLayer(out_chunk_features, in_chunk_features),
         )
         self.lr = lr
+        self.save_hyperparameters()
 
 
 @click.command()
