@@ -1,0 +1,82 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.2'
+      jupytext_version: 1.13.1
+  kernelspec:
+    display_name: Python 3 (ipykernel)
+    language: python
+    name: python3
+---
+
+# SNP Dataset
+
+```{python}
+from src.data import SNPDataset
+```
+
+The SNP dataset automagically reads the pre-processed data and re-formats it for the other algorithms.
+
+```{python}
+dset = SNPDataset()
+```
+
+It also allows access to the data's properties, such as number of input features or classes.
+
+```{python}
+print(f"""The SNP dataset has {len(dset)} samples.
+Each sample is one-hot encoded into a matrix with {dset.sample_shape[0]} rows and {dset.sample_shape[1]} columns.
+Each column corresponds to a SNP variant.
+Each row represents whether SNP was not present, missing data, or present in the sample.
+Each with {dset.num_features} and classified into one of {dset.num_classes} classes.""")
+```
+
+Finally, the dataset object stores a mapping to convert class indices back to labels.
+
+```{python}
+dset.idx_to_class
+```
+
+To access a specific sample, one can call it by its index number:
+
+```{python}
+x, y = dset[0]
+x, y
+```
+
+Alternatively, samples without pre-processing can be called via the `samples` attribute.
+
+```{python}
+x, y = dset.samples[0]
+x, y
+```
+
+# SNP Data Module
+
+```{python}
+from src.data import SNPDataModule
+```
+
+The SNP data module loads the full SNP dataset and splits into training and validation sets.
+
+```{python}
+datamodule = SNPDataModule(train_size=0.8, val_size=0.2, batch_size=10)
+datamodule.setup()  # needs to be called
+```
+
+It inherits all the properties from the dataset object.
+
+```{python}
+datamodule.num_features, datamodule.num_classes
+```
+
+And dispatches data loaders that shuffle and arrange the data into batches.
+
+```{python}
+dataloader = datamodule.train_dataloader()
+x, y = next(iter(dataloader))
+x.shape, y.shape
+```

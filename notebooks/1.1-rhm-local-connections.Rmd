@@ -1,0 +1,184 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.2'
+      jupytext_version: 1.13.1
+  kernelspec:
+    display_name: Python 3 (ipykernel)
+    language: python
+    name: python3
+---
+
+# Local connections
+
+Locally-connected networks \[[1](https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/43970.pdf)\] reduce model size by splitting the input into so-called patches. A weight is applied to each patch rather than to all the units in a fully-connected layer.
+
+
+Consider the following sample, consisting of 6 features with 4 elements.
+
+```{python}
+import torch
+
+num_features = 6
+num_elements = 4
+batch_size = 2
+
+in_features = num_features * num_elements  # actual number of features
+
+x = (
+    torch.arange(batch_size * in_features).float()
+    .view(batch_size, num_features, num_elements).transpose(1, -1)
+)
+x
+```
+
+We want to reduce these 24 features to 3 by using a linear transformation ($XW^\top$) with fixed weights.
+
+In this example, the value of each output unit of the first sample is the sum of every element ($\sum^{23}_{x=0}x = 276$) multiplied by 1, 2, or 3.
+
+For the second sample, the sum is $\sum^{47}_{x=24}x = 852$.
+
+```{python}
+out_features = 3
+
+weight = torch.Tensor([
+    [1.] * in_features,
+    [2.] * in_features,
+    [3.] * in_features
+])
+
+y = x.flatten(1) @ weight.T
+y
+```
+
+Note that the size of the weight is 72 parameters!
+
+```{python}
+weight.shape, weight.numel()
+```
+
+Now, let's try a locally-connected layer. As with the previous example, we want to reduce 24 input features into 3 output features. To achieve this, we have to split each sample into 3 patches, each with 8 input features and a single output feature.
+
+```{python}
+in_patch_features = 8
+out_patch_features = 1
+num_patches = in_features // in_patch_features
+
+x_reshaped = x.transpose(-1, 1).reshape(batch_size, num_patches, in_patch_features)
+x_reshaped  # all the elements belonging to each patch are arranged in a different row
+```
+
+Once again, let's define our weight. Note, however, that the weights (i.e., the number of parameters) has reduced! From 72 to 24! For sparse inputs with large number of features it makes sense to use locally-connected layers to prevent intractability.
+
+```{python}
+weight = torch.Tensor([[
+    [1.] * in_patch_features,
+    [2.] * in_patch_features,
+    [3.] * in_patch_features
+]])
+weight.shape, weight.numel()
+```
+
+Now we can take each patch and apply the corresponding weight.
+
+For two samples this results in two values. Each resulting from the sum of all elements in a single patch.
+
+For the first patch in the first sample, this corresponds to $\sum_{x=0}^7 x = 28$. For the second sample, it is $\sum_{x=24}^{31} x = 220$.
+
+Compare this to the linear transformation in which the output unit depends on all the elements in the sample (e.g., $\sum_{x=0}^{24} x = 276$).
+
+Here, the connection is **local**.
+
+```{python}
+sample_idx = 0
+patch_idx = 0
+
+x_reshaped[:,patch_idx,:] @ weight[:,patch_idx,:].T
+```
+
+The remaining units can be calculated in a loop.
+
+```{python}
+y = torch.empty(batch_size, out_features)
+
+for i in range(num_patches):
+    y[:, [i]] = x_reshaped[:,i,:] @ weight[:,i,:].T
+
+y
+```
+
+Alternatively, a dot product can be rewritten in terms of multiplication and sum.
+
+```{python}
+y = torch.empty(batch_size, out_features)
+
+for i in range(batch_size):
+    y[[i], :] = (x_reshaped[[i],:,:] * weight).sum(axis=2)
+
+y
+```
+
+Lastly, we can rewrite this operation using the Einsten summation notation: `ijk, xjk -> ijx`.
+
+Meaning:
+- a matrix of dimensions `ijk` (`batch_size`, `num_patches`, `in_patch_features`) and
+- a matrix of dimensions `xjk` (`out_patch_features`, `num_patches`, `in_patch_features`)
+- have their `jk` axes multiplied and then summed along axis `k`
+- thus, resulting in a matrix `ijx` (`batch_size`, `num_patches`, `out_patch_features`)
+
+Since, `out_features` equals the product of `num_patches` and `out_patch_features`, we can flatten the result to obtain the result.
+
+```{python}
+y = torch.einsum("ijk, xjk -> ijx", x_reshaped, weight).flatten(start_dim=1)
+y
+```
+
+# LC Layer
+
+All of this happens in the `LCLayer` class.
+
+```{python}
+from src.models import LCLayer
+
+x = x[:,:,:2]  # only the first two columns
+
+lc = LCLayer(in_patch_features, out_patch_features)
+
+# initialize weights as ones
+lc.initialize_parameters(x)
+torch.nn.init.ones_(lc.weight)
+
+with torch.no_grad():
+    y = lc(x)
+
+y
+```
+
+# Blocks
+
+A block is defined as sequential layers of type: linear/locally-connected transformation, activation function, batch normalization, and dropout.
+
+```{python}
+from src.models import Block
+
+Block(torch.nn.Linear, in_features, out_features, dropout_rate=0.2)
+```
+
+# LC Network
+
+Blocks are useful to build stacks and networks. The LC network consists of several LC blocks together.
+
+```{python}
+from src.models import LCNetwork
+
+num_blocks = 3
+
+LCNetwork(num_blocks, in_patch_features, out_patch_features, out_features, dropout_rate=0.2)
+```
+
+```{python}
+
+```
