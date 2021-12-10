@@ -1,5 +1,6 @@
 __all__ = ["plot_metrics", "plot_grid"]
 
+from collections import Iterable
 from math import sqrt, ceil
 from os import PathLike
 from pathlib import Path
@@ -53,6 +54,8 @@ def plot_metrics(
     colnames = tuple(metrics.columns.get_level_values(0).unique())
 
     fig, axs = plt.subplots(ncols=len(colnames), figsize=figsize)
+    if not isinstance(axs, Iterable):
+        axs = [axs]
     for ax, colname in zip(axs, colnames):
         plot_data = metrics[colname].reset_index(level=1, drop=True)
         ax.set_ylabel(colname)
