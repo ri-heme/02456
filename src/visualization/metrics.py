@@ -42,10 +42,10 @@ def plot_metrics(
     logger_or_path : src.models.CSVLogger or os.PathLike
         Logger object used to train model or path to experiment results
     figsize : tuple of int
-        Tuple of plot's (width, height) in inches
+        Tuple of plot's dimensions (width, height) in inches
     """
     experiment_path = (
-        logger_or_path
+        Path(logger_or_path)
         if not isinstance(logger_or_path, CSVLogger)
         else Path(logger_or_path.log_dir)
     )
@@ -65,7 +65,7 @@ def plot_metrics(
     title = f"{experiment_path.parent.name}, {hparams_fmt}"
     fig.suptitle(title)
     fig.tight_layout(rect=[0, 0, 1, 0.95])
-    fig.savefig(Path(experiment_path, METRICS_FIG_FILENAME), bbox_inches="tight")
+    fig.savefig(experiment_path / METRICS_FIG_FILENAME, bbox_inches="tight")
 
 
 def _format_hparams(experiment_path: Path):
