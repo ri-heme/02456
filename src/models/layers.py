@@ -30,7 +30,7 @@ def pad(method):
         if x.shape[1:].numel() == self.observation_features:
             x = F.pad(x, (0, self.padding))
         return method(self, x)
-    
+
     return decorator
 
 

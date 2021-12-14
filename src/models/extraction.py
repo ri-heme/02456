@@ -12,7 +12,7 @@ from src.models.layers import make_2d
 
 
 class BaseVAE(pl.LightningModule):
-    def __init__(self, beta: float=1.0):
+    def __init__(self, beta: float = 1.0):
         super().__init__()
         self.beta = beta
 
