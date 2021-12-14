@@ -42,7 +42,7 @@ class VAE(BaseVAE):
         num_units: List[int] = [256, 128],
         dropout_rate: float = 0.0,
         lr: float = 1e-4,
-        beta: float = 1.0
+        beta: float = 1.0,
     ) -> None:
         super().__init__(beta)
         self.encoder = LinearStack(num_units, dropout_rate)
@@ -74,13 +74,14 @@ class VAE(BaseVAE):
 )
 @click.option("-D", "--dropout", type=float, default=0.0, help="Set dropout rate.")
 @click.option("--lr", type=float, default=1e-4, help="Set learning rate.")
+@click.option("-B", "--beta", type=float, default=1.0, help="Set beta.")
 @click.option("-V", "--version", default=None, help="Set experiment version.")
-def main(num_processes, latent_features, num_units, dropout, lr, version) -> None:
+def main(num_processes, latent_features, num_units, dropout, lr, beta, version) -> None:
     # Setup data and model
     data = SNPDataModule(num_processes=num_processes)
     data.setup(stage="fit")
 
-    model = VAE(data.num_features, latent_features, num_units, dropout, lr)
+    model = VAE(data.num_features, latent_features, num_units, dropout, lr, beta)
 
     # Train model
     logger = CSVLogger("vae", version)

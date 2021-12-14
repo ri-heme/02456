@@ -56,8 +56,6 @@ def _encode_decode(
     return out_features
 
 
-
-
 class LCVAE(BaseVAE):
     """Variational autoencoder with locally-connected linear blocks in its
     encoder and decoder architecture.
@@ -92,7 +90,7 @@ class LCVAE(BaseVAE):
         out_chunk_features: int = 8,
         dropout_rate: float = 0.0,
         lr: float = 1e-4,
-        beta: float = 1.0
+        beta: float = 1.0,
     ) -> None:
         super().__init__(beta)
         self.observation_features = observation_features
@@ -100,7 +98,11 @@ class LCVAE(BaseVAE):
             observation_features, depth, in_chunk_features, out_chunk_features
         )
         out_features = _encode_decode(
-            observation_features, self.padding, depth, in_chunk_features, out_chunk_features
+            observation_features,
+            self.padding,
+            depth,
+            in_chunk_features,
+            out_chunk_features,
         )
         self.encoder = LCStack(depth, in_chunk_features, out_chunk_features)
         self.latent = nn.ModuleList([nn.LazyLinear(latent_features) for _ in range(2)])
@@ -113,7 +115,9 @@ class LCVAE(BaseVAE):
         self.save_hyperparameters()
 
     @pad
-    def forward(self, x: torch.Tensor) -> Tuple[dist.Normal, dist.Normal, dist.Normal, torch.Tensor]:
+    def forward(
+        self, x: torch.Tensor
+    ) -> Tuple[dist.Normal, dist.Normal, dist.Normal, torch.Tensor]:
         return super().forward(x)
 
     @pad
@@ -151,6 +155,7 @@ class LCVAE(BaseVAE):
 )
 @click.option("-D", "--dropout", type=float, default=0.0, help="Set dropout rate.")
 @click.option("--lr", type=float, default=1e-4, help="Set learning rate.")
+@click.option("-B", "--beta", type=float, default=1.0, help="Set beta.")
 @click.option("-V", "--version", default=None, help="Set experiment version.")
 def main(
     num_processes,
@@ -160,6 +165,7 @@ def main(
     out_features,
     dropout,
     lr,
+    beta,
     version,
 ) -> None:
     # Setup data and model
@@ -174,6 +180,7 @@ def main(
         out_features,
         dropout,
         lr,
+        beta,
     )
 
     # Train model
