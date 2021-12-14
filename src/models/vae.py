@@ -30,6 +30,9 @@ class VAE(BaseVAE):
         Probability to dropout units after each block
     lr : float, optional
         Learning rate, by default 1e-4
+    beta: float, optional
+        Changes the degree of applied learning pressure during training, thus
+        encouraging different learnt representations, by default 1
     """
 
     def __init__(
@@ -39,8 +42,9 @@ class VAE(BaseVAE):
         num_units: List[int] = [256, 128],
         dropout_rate: float = 0.0,
         lr: float = 1e-4,
+        beta: float = 1.0
     ) -> None:
-        super().__init__()
+        super().__init__(beta)
         self.encoder = LinearStack(num_units, dropout_rate)
         self.latent = nn.ModuleList([nn.LazyLinear(latent_features) for _ in range(2)])
         self.decoder = nn.Sequential(

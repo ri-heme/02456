@@ -12,6 +12,10 @@ from src.models.layers import make_2d
 
 
 class BaseVAE(pl.LightningModule):
+    def __init__(self, beta: float=1.0):
+        super().__init__()
+        self.beta = beta
+
     def encode(self, x) -> Tuple[torch.Tensor, ...]:
         """Encode the observation into the parameters of the posterior
         distribution.
@@ -88,7 +92,7 @@ class BaseVAE(pl.LightningModule):
         log_px = px.log_prob(x).sum(-1)
         log_pz = pz.log_prob(z)
         log_qz = qz.log_prob(z)
-        kl_divergence = (log_qz - log_pz).sum(-1)
+        kl_divergence = self.beta * (log_qz - log_pz).sum(-1)
         elbo = -(log_px - kl_divergence).mean()
         return elbo
 
