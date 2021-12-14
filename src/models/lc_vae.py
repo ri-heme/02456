@@ -1,15 +1,18 @@
 __all__ = ["LCVAE"]
 
 from math import ceil
-from typing import Iterable
+from typing import Iterable, Tuple
 
 import click
+import numpy as np
+import torch
+import torch.distributions as dist
 from scipy import optimize
 from torch import nn
 
 from src.data.preprocessing import SNPDataModule
 from src.models.extraction import BaseVAE
-from src.models.layers import Block, LCLayer, LCStack
+from src.models.layers import Block, LCLayer, LCStack, pad
 from src.models.logger import CSVLogger
 from src.models.training import train_model
 from src.visualization.metrics import plot_metrics
@@ -53,6 +56,8 @@ def _encode_decode(
     return out_features
 
 
+
+
 class LCVAE(BaseVAE):
     """Variational autoencoder with locally-connected linear blocks in its
     encoder and decoder architecture.
@@ -73,6 +78,9 @@ class LCVAE(BaseVAE):
         Probability to dropout units after each block
     lr : float, optional
         Learning rate, by default 1e-4
+    beta: float, optional
+        Changes the degree of applied learning pressure during training, thus
+        encouraging different learnt representations, by default 1
     """
 
     def __init__(
@@ -84,18 +92,17 @@ class LCVAE(BaseVAE):
         out_chunk_features: int = 8,
         dropout_rate: float = 0.0,
         lr: float = 1e-4,
+        beta: float = 1.0
     ) -> None:
-        super().__init__()
-        padding = _find_padding(
+        super().__init__(beta)
+        self.observation_features = observation_features
+        self.padding = _find_padding(
             observation_features, depth, in_chunk_features, out_chunk_features
         )
         out_features = _encode_decode(
-            observation_features, padding, depth, in_chunk_features, out_chunk_features
+            observation_features, self.padding, depth, in_chunk_features, out_chunk_features
         )
-        self.encoder = nn.Sequential(
-            nn.ZeroPad2d((0, padding, 0, 0)),
-            LCStack(depth, in_chunk_features, out_chunk_features),
-        )
+        self.encoder = LCStack(depth, in_chunk_features, out_chunk_features)
         self.latent = nn.ModuleList([nn.LazyLinear(latent_features) for _ in range(2)])
         self.decoder = nn.Sequential(
             Block(nn.Linear, latent_features, out_features, dropout_rate),
@@ -104,6 +111,18 @@ class LCVAE(BaseVAE):
         )
         self.lr = lr
         self.save_hyperparameters()
+
+    @pad
+    def forward(self, x: torch.Tensor) -> Tuple[dist.Normal, dist.Normal, dist.Normal, torch.Tensor]:
+        return super().forward(x)
+
+    @pad
+    def calculate_elbo(self, x: torch.Tensor) -> torch.Tensor:
+        return super().calculate_elbo(x)
+
+    @pad
+    def project(self, x: torch.Tensor) -> np.ndarray:
+        return super().project(x)
 
 
 @click.command()

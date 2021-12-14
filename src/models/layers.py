@@ -21,6 +21,19 @@ def make_2d(method):
     return decorator
 
 
+def pad(method):
+    """Pads 2D input."""
+
+    @wraps(method)
+    @make_2d
+    def decorator(self, x: torch.Tensor):
+        if x.shape[1:].numel() == self.observation_features:
+            x = F.pad(x, (0, self.padding))
+        return method(self, x)
+    
+    return decorator
+
+
 class Block(nn.Module):
     """Block consisting of a linear transformation, SiLU activation function,
     batch normalization, and dropout layer.
