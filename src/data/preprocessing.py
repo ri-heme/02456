@@ -70,9 +70,8 @@ class SNPDataset(Dataset):
 
         metadata = (
             pd.read_csv(metadata_path, sep="\t", header=None, names=_METADATA_COLUMNS)
-            .fillna("Unknown")
-            .where(lambda df: df.encoding.isin(encodings))
-            .dropna()
+            .set_index("encoding")
+            .loc[encodings]
         )
 
         input_files = sorted(
