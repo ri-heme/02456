@@ -98,9 +98,7 @@ def plot_grid(
     if isinstance(model_path_or_experiment_paths, Path):
         # If model directory is given, find all experiments (i.e., versions)
         experiment_paths = [
-            path
-            for path in model_path_or_experiment_paths.glob("*")
-            if path.is_dir()
+            path for path in model_path_or_experiment_paths.glob("*") if path.is_dir()
         ]
     elif isinstance(model_path_or_experiment_paths, list):
         # Specific versions were given
@@ -147,10 +145,9 @@ def plot_grid(
                     ax.set_ylabel(metric)
                 else:
                     plt.setp(ax.get_yticklabels(), visible=False)
-                # Have following plots share axis ticks 
+                # Have following plots share axis ticks
                 if shared_ax is None:
                     shared_ax = ax
 
     gs.tight_layout(fig)
     fig.savefig(Path(experiment_paths[k].parent, f"{metric}.png"), bbox_inches="tight")
-
