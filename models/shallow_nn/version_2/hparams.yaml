@@ -1,2 +1,4 @@
+latent_features: 2
 lr: 0.001
-num_units: 2
+num_classes: 13
+num_features: 328044

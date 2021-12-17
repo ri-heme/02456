@@ -42,10 +42,10 @@ def plot_metrics(
     logger_or_path : src.models.CSVLogger or os.PathLike
         Logger object used to train model or path to experiment results
     figsize : tuple of int
-        Tuple of plot's (width, height) in inches
+        Tuple of plot's dimensions (width, height) in inches
     """
     experiment_path = (
-        logger_or_path
+        Path(logger_or_path)
         if not isinstance(logger_or_path, CSVLogger)
         else Path(logger_or_path.log_dir)
     )
@@ -65,7 +65,7 @@ def plot_metrics(
     title = f"{experiment_path.parent.name}, {hparams_fmt}"
     fig.suptitle(title)
     fig.tight_layout(rect=[0, 0, 1, 0.95])
-    fig.savefig(Path(experiment_path, METRICS_FIG_FILENAME), bbox_inches="tight")
+    fig.savefig(experiment_path / METRICS_FIG_FILENAME, bbox_inches="tight")
 
 
 def _format_hparams(experiment_path: Path):
@@ -98,9 +98,7 @@ def plot_grid(
     if isinstance(model_path_or_experiment_paths, Path):
         # If model directory is given, find all experiments (i.e., versions)
         experiment_paths = [
-            path
-            for path in model_path_or_experiment_paths.glob("*")
-            if path.is_dir()
+            path for path in model_path_or_experiment_paths.glob("*") if path.is_dir()
         ]
     elif isinstance(model_path_or_experiment_paths, list):
         # Specific versions were given
@@ -147,10 +145,9 @@ def plot_grid(
                     ax.set_ylabel(metric)
                 else:
                     plt.setp(ax.get_yticklabels(), visible=False)
-                # Have following plots share axis ticks 
+                # Have following plots share axis ticks
                 if shared_ax is None:
                     shared_ax = ax
 
     gs.tight_layout(fig)
     fig.savefig(Path(experiment_paths[k].parent, f"{metric}.png"), bbox_inches="tight")
-

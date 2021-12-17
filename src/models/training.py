@@ -34,8 +34,9 @@ def train_model(
             dummy = torch.ones(datamodule.batch_size, *datamodule.sample_shape)
             model(dummy)
 
-    # Set up early stopping
+    # Set up callbacks
     early_stopping = pl.callbacks.EarlyStopping(monitor="val_loss")
+    checkpoint = pl.callbacks.ModelCheckpoint(save_weights_only=True)
 
     # Train
     trainer = pl.Trainer(
@@ -43,7 +44,7 @@ def train_model(
         accelerator="cpu",
         num_processes=num_processes,
         max_epochs=400,
-        callbacks=[early_stopping],
+        callbacks=[early_stopping, checkpoint],
         plugins=DDPPlugin(find_unused_parameters=False),
     )
     trainer.fit(model, datamodule=datamodule)

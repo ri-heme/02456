@@ -1,0 +1,85 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.2'
+      jupytext_version: 1.13.1
+  kernelspec:
+    display_name: Python 3 (ipykernel)
+    language: python
+    name: python3
+---
+
+# Variational encoder
+
+The variational autoencoder architecture consists of a decoder which reduces the dimensionality of an input, and a decoder which reconstructs the input. It applies variational inference to determine the probability of the reconstruction and depends on ELBO as a loss function.
+
+```{python}
+from src.data import SNPDataModule
+from src.models import VAE
+
+datamodule = SNPDataModule()
+datamodule.setup()
+
+latent_features=2
+
+vae = VAE(
+    datamodule.num_features,
+    latent_features,
+    num_units=[1024, 256]
+)
+```
+
+Note many models in this package are lazy! This means that they automagically detect the number of input features. So they must be initialized.
+
+```{python}
+import torch
+
+with torch.no_grad():
+    dummy = torch.empty(2, *datamodule.sample_shape)
+    vae(dummy)
+```
+
+The architecture of the VAE is a bowtie:
+    
+1. Encoder: stack of blocks (Linear/SiLU/BatchNorm)
+2. Latent layers: 2 Linear layers for $\mu$ and $\log\sigma$
+3. Decoder: stack of blocks and output layer
+
+```{python}
+vae
+```
+
+## LC VAE
+
+The LC VAE has the same architecture as the regular VAE. But uses LC layers instead of linear layers.
+
+```{python}
+from src.models import LCVAE
+
+num_blocks = 2
+in_patch_features = 90
+out_patch_features = 4
+latent_features = 2
+
+lc_vae = LCVAE(
+    datamodule.num_features,
+    latent_features,
+    num_blocks,
+    in_patch_features,
+    out_patch_features
+)
+
+with torch.no_grad():
+    lc_vae(dummy)
+```
+
+```{python}
+lc_vae
+```
+
+```{python}
+
+```
