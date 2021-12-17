@@ -1,4 +1,4 @@
-__all__ = ["LCNetwork"]
+__all__ = ["LCN"]
 
 import click
 import torch
@@ -8,12 +8,12 @@ from torch.optim import Optimizer
 from src.data.preprocessing import SNPDataModule
 from src.models.layers import LCStack
 from src.models.logger import CSVLogger
-from src.models.prediction import PredictionModel
+from src.models.prediction.base import PredictionModel
 from src.models.training import train_model
 from src.visualization import plot_metrics
 
 
-class LCNetwork(PredictionModel):
+class LCN(PredictionModel):
     """Neural network composed of locally-connected layers.
 
     Parameters
@@ -89,7 +89,7 @@ def main(num_processes, depth, in_features, out_features, dropout, lr, version) 
     data = SNPDataModule(val_size=0.2, num_processes=num_processes)
     data.setup(stage="fit")
 
-    model = LCNetwork(depth, in_features, out_features, data.num_classes, dropout, lr)
+    model = LCN(depth, in_features, out_features, data.num_classes, dropout, lr)
 
     # Train model
     logger = CSVLogger("lc_network", version, ["loss", "acc"])

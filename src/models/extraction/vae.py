@@ -6,7 +6,7 @@ import click
 from torch import nn
 
 from src.data.preprocessing import SNPDataModule
-from src.models.extraction import BaseVAE
+from src.models.extraction.base import BaseVAE
 from src.models.layers import LinearStack
 from src.models.logger import CSVLogger
 from src.models.training import train_model
