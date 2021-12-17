@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 
 import src
-from src import data
 
 EXPECTED_SAMPLES = 6155
 EXPECTED_CLASSES = 13
@@ -37,7 +36,7 @@ def snp_datamodule(request):
 class TestDataModule:
     @pytest.mark.parametrize(
         "dataloader",
-        ["train_dataloader", "test_dataloader", "val_dataloader", "predict_dataloader"],
+        ["train_dataloader", "test_dataloader", "val_dataloader"],
     )
     def test_batch_size(self, dataloader):
         batch = next(iter(getattr(self.datamodule, dataloader)()))
@@ -45,6 +44,6 @@ class TestDataModule:
         assert all(x.size(0) == EXPECTED_BATCH_SIZE for x in batch)
 
     def test_split(self):
-        assert len(self.datamodule.train_data) == EXPECTED_TRAIN_SIZE
-        assert len(self.datamodule.test_data) == EXPECTED_TEST_SIZE
-        assert len(self.datamodule.val_data) == EXPECTED_VAL_SIZE
+        assert len(self.datamodule.train_dataset) == EXPECTED_TRAIN_SIZE
+        assert len(self.datamodule.test_dataset) == EXPECTED_TEST_SIZE
+        assert len(self.datamodule.val_dataset) == EXPECTED_VAL_SIZE

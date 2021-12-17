@@ -28,8 +28,9 @@ _METADATA_COLUMNS = [
     "ancestry",
 ]
 
+
 def find_raw_data_path() -> PathLike:
-    return Path(find_dotenv()).parent / "data" / "raw" 
+    return Path(find_dotenv()).parent / "data" / "raw"
 
 
 class SNPDataset(Dataset):
@@ -95,7 +96,7 @@ class SNPDataset(Dataset):
         # [0, 0] -> [1, 0, 0, 0] 0 SNPs
         # [0, 1] -> [0, 1, 0, 0] NaNs
         # [1, 0] -> [0, 0, 1, 0] 1 SNP
-        # [1, 1] -> [0, 0, 0, 1] 2 SNPs
+        # [1, 1] -> [0, 0, 0, 1] 2 SNPs (not used)
         X = torch.Tensor([2, 1]) * torch.Tensor(torch.load(X))
         X = X.sum(axis=1).nan_to_num(nan=1).long()
         X = one_hot(X).float().T
@@ -140,22 +141,22 @@ class SNPDataModule(LightningDataModule):
         self.num_processes = num_processes
 
     def setup(self, stage: str = None) -> None:
-        full_dataset = SNPDataset(self.raw_data_path)
-        self.num_features = full_dataset.num_features
-        self.num_classes = full_dataset.num_classes
-        self.sample_shape = full_dataset.sample_shape
-        self.idx_to_class = full_dataset.idx_to_class
-        full_size = len(full_dataset)
+        self.full_dataset = SNPDataset(self.raw_data_path)
+        self.num_features = self.full_dataset.num_features
+        self.num_classes = self.full_dataset.num_classes
+        self.sample_shape = self.full_dataset.sample_shape
+        self.idx_to_class = self.full_dataset.idx_to_class
+        full_size = len(self.full_dataset)
         train_size = int(full_size * self.train_size)
         val_size = int(full_size * self.val_size)
         test_size = full_size - train_size - val_size
-        self.train_data, self.test_data, self.val_data = random_split(
-            full_dataset, (train_size, test_size, val_size)
+        self.train_dataset, self.test_dataset, self.val_dataset = random_split(
+            self.full_dataset, (train_size, test_size, val_size)
         )
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(
-            self.train_data,
+            self.train_dataset,
             self.batch_size,
             num_workers=self.num_processes,
             persistent_workers=self.num_processes > 0,
@@ -164,7 +165,7 @@ class SNPDataModule(LightningDataModule):
 
     def test_dataloader(self) -> DataLoader:
         return DataLoader(
-            self.test_data,
+            self.test_dataset,
             self.batch_size,
             num_workers=self.num_processes,
             persistent_workers=self.num_processes > 0,
@@ -172,11 +173,11 @@ class SNPDataModule(LightningDataModule):
 
     def val_dataloader(self) -> DataLoader:
         return DataLoader(
-            self.val_data,
+            self.val_dataset,
             self.batch_size,
             num_workers=self.num_processes,
             persistent_workers=self.num_processes > 0,
         )
 
     def predict_dataloader(self) -> DataLoader:
-        return DataLoader(self.test_data, len(self.test_data))
+        return DataLoader(self.full_dataset, 300)
