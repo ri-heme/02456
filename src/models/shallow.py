@@ -32,7 +32,6 @@ class ShallowNN(PredictionModel):
         self, num_features: int, num_classes: int, num_units: int = 2, lr: float = 1e-3
     ):
         super().__init__()
-        self.lr = lr
         self.network = nn.Sequential(
             nn.Linear(num_features, num_units),
             nn.SiLU(),
@@ -49,11 +48,16 @@ class ShallowNN(PredictionModel):
         -------
         torch.optim.Optimizer
         """
-        return torch.optim.SGD(self.parameters(), lr=self.lr, momentum=0.5)
+        return torch.optim.SGD(self.parameters(), lr=self.hparams.lr, momentum=0.5)
 
     @make_2d
     def forward(self, x: torch.Tensor):
         return self.network(x)
+
+    @make_2d
+    def project(self, x: torch.Tensor):
+        with torch.no_grad():
+            return self.network[0](x)
 
 
 @click.command()
