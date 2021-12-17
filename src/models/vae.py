@@ -51,7 +51,6 @@ class VAE(BaseVAE):
             LinearStack(num_units[::-1], dropout_rate),
             nn.LazyLinear(observation_features),
         )
-        self.lr = lr
         self.save_hyperparameters()
 
 

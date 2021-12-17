@@ -103,7 +103,7 @@ class BaseVAE(pl.LightningModule):
         -------
         torch.optim.Optimizer
         """
-        return torch.optim.Adam(self.parameters(), lr=self.lr)
+        return torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
 
     def training_step(self, batch, batch_idx) -> torch.Tensor:
         x, _ = batch
