@@ -5,7 +5,7 @@ import torch
 from torch import nn
 from torch.optim import Optimizer
 
-from src.data.preprocessing import SNPDataModule
+from src.data.snp import SNPDataModule
 from src.models.layers import LCStack
 from src.models.logger import CSVLogger
 from src.models.prediction.base import PredictionModel
