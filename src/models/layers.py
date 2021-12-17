@@ -2,6 +2,7 @@ __all__ = ["Block", "LCLayer", "LCStack", "make_2d"]
 
 from functools import wraps
 from math import ceil
+from typing import List
 
 import torch
 from torch import nn
@@ -13,7 +14,7 @@ def make_2d(method):
     """Flattens 3D input, conserving batch size dimension."""
 
     @wraps(method)
-    def decorator(self, x: torch.Tensor):
+    def decorator(self: nn.Module, x: torch.Tensor):
         if x.ndim == 3:
             x = x.transpose(dim0=-1, dim1=1).flatten(start_dim=1)
         return method(self, x)
@@ -26,7 +27,7 @@ def pad(method):
 
     @wraps(method)
     @make_2d
-    def decorator(self, x: torch.Tensor):
+    def decorator(self: nn.Module, x: torch.Tensor):
         if x.shape[1:].numel() == self.observation_features:
             x = F.pad(x, (0, self.padding))
         return method(self, x)
@@ -117,13 +118,10 @@ class LCLayer(lazy.LazyModuleMixin, nn.Linear):
         if self.has_uninitialized_params():
             with torch.no_grad():
                 self.in_features = x.shape[1:].numel()
-                self.num_chunks = ceil(self.in_features / self.in_chunk_features)
-                self.out_features = self.num_chunks * self.out_chunk_features
-                self.padding = (
-                    self.num_chunks * self.in_chunk_features - self.in_features
-                )
+                num_chunks = ceil(self.in_features / self.in_chunk_features)
+                self.out_features = num_chunks * self.out_chunk_features
                 self.weight.materialize(
-                    (self.out_chunk_features, self.num_chunks, self.in_chunk_features)
+                    (self.out_chunk_features, num_chunks, self.in_chunk_features)
                 )
                 if self.bias is not None:
                     self.bias.materialize((self.out_features))
@@ -131,11 +129,14 @@ class LCLayer(lazy.LazyModuleMixin, nn.Linear):
 
     @make_2d
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        num_chunks = self.weight.shape[1]
+        # padding = (num_chunks * self.in_chunk_features - in_features)
+        padding = self.weight.shape[1:].numel() - x.shape[1:].numel()
         # 1) Transpose & flatten => (batch size, in features)
         # 2) Pad
-        x = F.pad(x, (0, self.padding, 0, 0))
+        x = F.pad(x, (0, padding))
         # 3) Reshape => (batch size, chunks, in chunk features)
-        x = x.reshape(x.shape[0], self.num_chunks, self.in_chunk_features)
+        x = x.reshape(x.shape[0], num_chunks, self.in_chunk_features)
         # 4) Multiply X * W and sum along axis 2 (in chunk features [k]) =>
         #    (batch size [i], chunks [j], out chunk features [x])
         out = torch.einsum("ijk, xjk -> ijx", x, self.weight)
@@ -162,7 +163,9 @@ class LCStack(nn.Module):
         Probability to randomly dropout units after each block
     """
 
-    def __init__(self, depth, in_features, out_features, dropout_rate=0.0):
+    def __init__(
+        self, depth: int, in_features: int, out_features: int, dropout_rate: float = 0.0
+    ):
         super().__init__()
         blocks = [
             Block(LCLayer, in_features, out_features, dropout_rate)
@@ -179,13 +182,13 @@ class LinearStack(nn.Module):
 
     Parameters
     ----------
-    num_units : int
+    num_units : list of int
         Number of output features of each linear layer
-    dropout_rate : int
+    dropout_rate : float
         Probability to randomly dropout units after each block
     """
 
-    def __init__(self, num_units, dropout_rate=0.0):
+    def __init__(self, num_units: List[int], dropout_rate: float = 0.0):
         super().__init__()
         blocks = [
             Block(nn.LazyLinear, None, out_features, dropout_rate)

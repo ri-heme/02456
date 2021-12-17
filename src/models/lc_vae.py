@@ -25,14 +25,22 @@ def _find_padding(
     in_chunk_features: int,
     out_chunk_features: int,
 ):
+    # Calculates how much padding to add to the input of the LC VAE to enforce
+    # the shape of the encoder's input matches the decoder's output shape.
+    #
+    # Padding is calculated by using a non-linear solver and minimizing:
+    #   f(padding) = (# out features) - (# in features + padding)
+    #
+    # Ideally, f(padding) = 0 is found, but sometimes there is no convergence
+
     def encode_decode(x: Iterable[float]):
         padding = ceil(x[0])
         # Encode
-        out_features = _encode_decode(
+        out_features = _simulate_stack(
             observation_features, padding, depth, in_chunk_features, out_chunk_features
         )
         # Decode
-        out_features = _encode_decode(
+        out_features = _simulate_stack(
             out_features, 0, depth, out_chunk_features, in_chunk_features
         )
         # Compare features of reconstruction to observation features (incl. padding)
@@ -43,13 +51,14 @@ def _find_padding(
     return ceil(root[0])
 
 
-def _encode_decode(
+def _simulate_stack(
     observation_features: int,
     padding: int,
     depth: int,
     in_chunk_features: int,
     out_chunk_features: int,
 ):
+    # Simulates how the number of features changes in an encoder/decoder
     out_features = observation_features + padding
     for _ in range(depth):
         out_features = out_chunk_features * ceil(out_features / in_chunk_features)
@@ -93,11 +102,8 @@ class LCVAE(BaseVAE):
         beta: float = 1.0,
     ) -> None:
         super().__init__(beta)
-        self.observation_features = observation_features
-        self.padding = _find_padding(
-            observation_features, depth, in_chunk_features, out_chunk_features
-        )
-        out_features = _encode_decode(
+        self._padding = None
+        inner_features = _simulate_stack(
             observation_features,
             self.padding,
             depth,
@@ -107,12 +113,29 @@ class LCVAE(BaseVAE):
         self.encoder = LCStack(depth, in_chunk_features, out_chunk_features)
         self.latent = nn.ModuleList([nn.LazyLinear(latent_features) for _ in range(2)])
         self.decoder = nn.Sequential(
-            Block(nn.Linear, latent_features, out_features, dropout_rate),
+            Block(nn.Linear, latent_features, inner_features, dropout_rate),
             LCStack(depth - 1, out_chunk_features, in_chunk_features, dropout_rate),
             LCLayer(out_chunk_features, in_chunk_features),
         )
-        self.lr = lr
         self.save_hyperparameters()
+
+    @property
+    def padding(self) -> int:
+        """Padding added to the input, so encoder and decoder blocks match in size.
+
+        Returns
+        -------
+        int
+        """
+        # Compute padding if it has not been calculated before
+        if getattr(self, "_padding", None) is None:
+            self._padding = _find_padding(
+                self.hparams.observation_features,
+                self.hparams.depth,
+                self.hparams.in_chunk_features,
+                self.hparams.out_chunk_features,
+            )
+        return self._padding
 
     @pad
     def forward(
