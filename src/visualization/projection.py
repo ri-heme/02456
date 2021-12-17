@@ -51,7 +51,7 @@ def generate_projection(
 
     dataloader = datamodule.predict_dataloader()
     data = []
-    colnames = [f"z{i}" for i in range(model.latent_features)]
+    colnames = [f"z{i}" for i in range(model.hparams.latent_features)]
     for x, y in dataloader:
         z = model.project(x)
         df = pd.DataFrame(z, columns=colnames, index=y.numpy().flatten())
@@ -100,7 +100,7 @@ def plot_projection(
         2, by default False
     """
     if use_tsne:
-        z = TSNE(n_components=2, init="pca")
+        z = TSNE(n_components=2, init="pca").fit_transform(z)
 
     if isinstance(logger_or_path, CSVLogger):
         projection_filepath = Path(logger_or_path.log_dir, PROJECTION_IMG_FILENAME)

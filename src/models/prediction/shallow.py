@@ -62,7 +62,7 @@ class ShallowNN(PredictionModel):
     @make_2d
     def project(self, x: torch.Tensor):
         with torch.no_grad():
-            return self.network[0](x)
+            return self.network[0](x).numpy()
 
 
 @click.command()
