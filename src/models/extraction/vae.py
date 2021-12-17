@@ -11,7 +11,7 @@ from src.models.layers import LinearStack
 from src.models.logger import CSVLogger
 from src.models.training import train_model
 from src.visualization.metrics import plot_metrics
-from src.visualization.projection import plot_projection
+from src.visualization.projection import generate_projection
 
 
 class VAE(BaseVAE):
@@ -90,9 +90,7 @@ def main(num_processes, latent_features, num_units, dropout, lr, beta, version) 
     plot_metrics(logger, (5, 4))
 
     # Project and plot
-    x, y = next(iter(data.predict_dataloader()))
-    z = model.project(x)
-    plot_projection(logger, y, z, data.idx_to_class)
+    generate_projection(logger, model, data, use_tsne=latent_features > 2)
 
 
 if __name__ == "__main__":

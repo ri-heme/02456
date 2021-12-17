@@ -10,7 +10,8 @@ from src.models.layers import make_2d
 from src.models.logger import CSVLogger
 from src.models.prediction.base import PredictionModel
 from src.models.training import train_model
-from src.visualization import plot_metrics
+from src.visualization.metrics import plot_metrics
+from src.visualization.projection import generate_projection
 
 
 class ShallowNN(PredictionModel):
@@ -22,20 +23,24 @@ class ShallowNN(PredictionModel):
         Number of input features
     num_classes : int
         Number of target classes
-    num_units : int, optional
+    latent_features : int, optional
         Number of neurons in the hidden layer, by default 2
     lr : float, optional
         Learning rate, by default 1e-3
     """
 
     def __init__(
-        self, num_features: int, num_classes: int, num_units: int = 2, lr: float = 1e-3
+        self,
+        num_features: int,
+        num_classes: int,
+        latent_features: int = 2,
+        lr: float = 1e-3,
     ):
         super().__init__()
         self.network = nn.Sequential(
-            nn.Linear(num_features, num_units),
+            nn.Linear(num_features, latent_features),
             nn.SiLU(),
-            nn.Linear(num_units, num_classes),
+            nn.Linear(latent_features, num_classes),
             nn.LogSoftmax(dim=1),
         )
         self.save_hyperparameters()
@@ -79,6 +84,9 @@ def main(num_processes, num_units, version) -> None:
 
     # Plot metrics
     plot_metrics(logger, (10, 4))
+
+    # Project and plot
+    generate_projection(logger, model, data, use_tsne=num_units > 2)
 
 
 if __name__ == "__main__":
