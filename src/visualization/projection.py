@@ -50,6 +50,8 @@ def generate_projection(
     use_tsne : bool, optional
         Whether to use t-SNE to further reduce the number of dimensions of the
         projections to 2, by default False
+    interactive : bool, optional
+        Whether to plot the projections in an interactive way, by default False
     """
     if isinstance(logger_or_path, CSVLogger):
         csv_filepath = Path(logger_or_path.log_dir, PROJECTION_CSV_FILENAME)
