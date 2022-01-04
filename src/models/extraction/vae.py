@@ -5,7 +5,7 @@ from typing import List
 import click
 from torch import nn
 
-from src.data.preprocessing import SNPDataModule
+from src.data.snp import SNPDataModule
 from src.models.extraction.base import BaseVAE
 from src.models.layers import LinearStack
 from src.models.logger import CSVLogger

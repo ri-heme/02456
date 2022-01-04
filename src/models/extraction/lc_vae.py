@@ -10,7 +10,7 @@ import torch.distributions as dist
 from scipy import optimize
 from torch import nn
 
-from src.data.preprocessing import SNPDataModule
+from src.data.snp import SNPDataModule
 from src.models.extraction.base import BaseVAE
 from src.models.layers import Block, LCLayer, LCStack, pad
 from src.models.logger import CSVLogger
