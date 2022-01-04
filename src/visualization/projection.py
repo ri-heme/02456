@@ -15,6 +15,12 @@ from sklearn.manifold import TSNE
 from src.models.extraction.base import BaseVAE
 from src.models.logger import CSVLogger
 
+# Bokeh Libraries
+from bokeh.plotting import figure, save
+from bokeh.io import output_file, export_png
+from bokeh.models import ColumnDataSource, CDSView, IndexFilter
+from bokeh.models import HoverTool
+
 PROJECTION_CSV_FILENAME = "projection.csv"
 PROJECTION_IMG_FILENAME = "projection.png"
 PROJECTION_IMG_ALL_FILENAME = "projection_all.png"
@@ -54,7 +60,8 @@ def generate_projection(
     colnames = [f"z{i}" for i in range(model.hparams.latent_features)]
     for x, y in dataloader:
         z = model.project(x)
-        df = pd.DataFrame(z, columns=colnames, index=y.numpy().flatten())
+        df = pd.DataFrame(
+            z, columns=colnames, index=y.numpy().flatten())
         data.append(df)
     data = pd.concat(data)
     data.index.name = "y"
@@ -62,7 +69,11 @@ def generate_projection(
 
     img_filepath = csv_filepath.parent / PROJECTION_IMG_ALL_FILENAME
     plot_projection(
-        img_filepath, data.index.values, data.values, datamodule.idx_to_class, use_tsne
+        img_filepath,
+        data.index.values,
+        data.values,
+        datamodule.idx_to_class,
+        use_tsne
     )
 
     img_filepath = csv_filepath.parent / PROJECTION_IMG_FILENAME
@@ -103,11 +114,14 @@ def plot_projection(
         z = TSNE(n_components=2, init="pca").fit_transform(z)
 
     if isinstance(logger_or_path, CSVLogger):
-        projection_filepath = Path(logger_or_path.log_dir, PROJECTION_IMG_FILENAME)
+        projection_filepath = Path(
+            logger_or_path.log_dir, PROJECTION_IMG_FILENAME
+            )
     else:
         projection_filepath = logger_or_path
 
-    fig, (ax, legend_ax) = plt.subplots(ncols=2, gridspec_kw={"width_ratios": [4, 1]})
+    fig, (ax, legend_ax) = plt.subplots(
+        ncols=2, gridspec_kw={"width_ratios": [4, 1]})
     palette = sns.color_palette("Paired", 13)
 
     if isinstance(y, torch.Tensor):
@@ -133,3 +147,142 @@ def plot_projection(
 
     fig.tight_layout()
     fig.savefig(projection_filepath, bbox_inches="tight")
+
+
+def plot_interactive_projection(
+    logger_or_path: Union[CSVLogger, PathLike],
+    y: Union[np.ndarray, torch.Tensor],
+    z: np.ndarray,
+    idx_to_class: Dict[int, str],
+    use_tsne: bool = False,
+) -> None:
+    """Generates a projection plot.
+
+    Parameters
+    ----------
+    logger_or_path : src.models.logger.CSVLogger or os.PathLike
+        Logger object or file path to save plot as
+    y : np.ndarray or torch.Tensor
+        Targets vector
+    z : np.ndarray
+        Low-dimensional representation of features
+    idx_to_class : dict
+        Mapping of target indices to labels
+    use_tsne : bool, optional
+        Whether to use t-SNE to further reduce the number of dimensions of z to
+        2, by default False
+    """
+    if use_tsne:
+        z = TSNE(n_components=2, init="pca").fit_transform(z)
+
+    if isinstance(logger_or_path, CSVLogger):
+        projection_filepath = Path(
+            logger_or_path.log_dir,
+            PROJECTION_IMG_FILENAME,
+            )
+    else:
+        projection_filepath = logger_or_path
+
+    if isinstance(y, torch.Tensor):
+        y = y.numpy()
+    y = y.reshape(-1)
+
+    _interactive_projection(y, z, idx_to_class, projection_filepath)
+
+
+def _interactive_projection(
+    y: np.ndarray,
+    z: np.ndarray,
+    idx_to_class: Dict[int, str],
+    projection_filepath: str,
+):
+    """Bokeh interactive projection
+
+    Parameters
+    ----------
+    y : np.ndarray
+        Targets vactor
+    z : np.ndarray
+        Low-dimensional representation of features
+    idx_to_class : dict
+        Mapping of target indices to labels
+    projection_filepath : string
+        Filepath
+    """
+    output_file(f'{projection_filepath}.html')
+
+    projection = pd.DataFrame(z, columns=["dim0", "dim1"])
+    projection["y"] = y
+
+    color = sns.color_palette('pastel', 13).as_hex()
+    colors = []
+    ancestry = []
+    for row in projection.iterrows():
+        colors.append(color[int(row[1]['y'])])
+        ancestry.append(idx_to_class[int(row[1]['y'])])
+
+    projection['colors'] = colors
+    projection['ancestry'] = ancestry
+    # Store the data in a ColumnDataSource
+    projection_CDS = ColumnDataSource(projection)
+
+    # Specify the selection tools to be made available
+    select_tools = [
+        'box_select',
+        'lasso_select',
+        'poly_select',
+        'tap',
+        'reset',
+        'save',
+        ]
+
+    # Create the figure
+    fig = figure(plot_height=400,
+                 plot_width=600,
+                 x_axis_label='dim0',
+                 y_axis_label='dim1',
+                 title='Projection',
+                 toolbar_location='below',
+                 tools=select_tools,)
+
+    for sep_ancestry in sorted(list(set(ancestry))):
+        indices = list(
+            projection.index[projection['ancestry'] == sep_ancestry])
+        view = CDSView(source=projection_CDS, filters=[IndexFilter(indices)])
+        # Add square representing each metabolite
+        fig.square(x='dim0',
+                   y='dim1',
+                   source=projection_CDS,
+                   color='colors',
+                   size=3,
+                   selection_color='deepskyblue',
+                   nonselection_color='lightgray',
+                   nonselection_alpha=0.5,
+                   legend_label=sep_ancestry,
+                   view=view)
+
+    # Format the tooltip
+    tooltips = [
+                ('Ancestry', '@ancestry'),
+                ('Dim 0', '@dim0'),
+                ('Dim 1', '@dim1'),
+            ]
+
+    # Configure a renderer to be used upon hover
+    hover_glyph = fig.circle(x='dim0', y='dim1', source=projection_CDS,
+                             size=15, alpha=0, color='lightpink',
+                             selection_color='grey',
+                             hover_fill_color='black', hover_alpha=0.5)
+
+    # Add the HoverTool to the figure
+    fig.add_tools(HoverTool(tooltips=tooltips, renderers=[hover_glyph]))
+
+    fig.legend.click_policy = 'mute'
+    fig.add_layout(fig.legend[0], 'right')
+
+    # Visualize
+    fig.background_fill_color = None
+    fig.border_fill_color = None
+
+    export_png(fig, filename=f'{projection_filepath}.png')
+    save(fig)
