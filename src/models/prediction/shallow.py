@@ -1,10 +1,14 @@
 __all__ = ["ShallowNN"]
 
+from math import floor
+
 import click
 import torch
 from torch import nn
 from torch.optim import Optimizer
+from src import data
 
+from src.data.latent import LatentDataModule
 from src.data.snp import SNPDataModule
 from src.models.layers import make_2d
 from src.models.logger import CSVLogger
@@ -68,25 +72,48 @@ class ShallowNN(PredictionModel):
 @click.command()
 @click.option("-P", "--num_processes", type=int, default=0, help="Set # of CPUs.")
 @click.option(
-    "-U", "--num_units", type=int, default=2, help="Set # of units in latent space."
+    "-IM", "--model_name", type=str, default=None, help="Set name of inference model."
+)
+@click.option(
+    "-IV",
+    "--model_version",
+    type=str,
+    default=None,
+    help="Set inference model's version.",
+)
+@click.option(
+    "-U", "--num_units", type=int, default=None, help="Set # of units in latent space."
 )
 @click.option("-V", "--version", default=None, help="Set experiment version.")
-def main(num_processes, num_units, version) -> None:
+def main(num_processes, model_name, model_version, num_units, version) -> None:
+    is_latent = False
     # Setup data and model
-    data = SNPDataModule(val_size=0.2, num_processes=num_processes)
-    data.setup(stage="fit")
+    if model_name is not None and model_version is not None:
+        datamodule = LatentDataModule(
+            model_name, model_version, val_size=0.2, num_processes=num_processes
+        )
+        is_latent = True
+    else:
+        datamodule = SNPDataModule(val_size=0.2, num_processes=num_processes)
+    datamodule.setup(stage="fit")
 
-    model = ShallowNN(data.num_features, data.num_classes, num_units)
+    # Automatically determine number of hidden units
+    if is_latent and num_units is None:
+        num_units = floor((datamodule.num_features + datamodule.num_classes) / 2)
+
+    model = ShallowNN(datamodule.num_features, datamodule.num_classes, num_units)
 
     # Train model
+    version = version if not is_latent else f"{model_name}_{model_version}"
     logger = CSVLogger("shallow_nn", version, ["loss", "acc"])
-    train_model(model, data, logger, num_processes)
+    train_model(model, datamodule, logger, num_processes)
 
     # Plot metrics
     plot_metrics(logger, (10, 4))
 
     # Project and plot
-    generate_projection(logger, model, data, use_tsne=num_units > 2)
+    if not is_latent:
+        generate_projection(logger, model, data, use_tsne=num_units > 2)
 
 
 if __name__ == "__main__":
