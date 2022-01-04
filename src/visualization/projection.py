@@ -32,6 +32,7 @@ def generate_projection(
     datamodule: pl.LightningDataModule,
     sample_size: int = 300,
     use_tsne: bool = False,
+    interactive: bool = False,
 ) -> None:
     """Generates a projection for every sample (as a CSV file) in the dataset
     and plots all and a random subset of projections.
@@ -67,24 +68,44 @@ def generate_projection(
     data.index.name = "y"
     data.to_csv(csv_filepath)
 
-    img_filepath = csv_filepath.parent / PROJECTION_IMG_ALL_FILENAME
-    plot_projection(
-        img_filepath,
-        data.index.values,
-        data.values,
-        datamodule.idx_to_class,
-        use_tsne
-    )
+    if interactive:
+        img_filepath = csv_filepath.parent / PROJECTION_IMG_ALL_FILENAME
+        plot_interactive_projection(
+            img_filepath,
+            data.index.values,
+            data.values,
+            datamodule.idx_to_class,
+            use_tsne
+        )
 
-    img_filepath = csv_filepath.parent / PROJECTION_IMG_FILENAME
-    sample = data.sample(sample_size)
-    plot_projection(
-        img_filepath,
-        sample.index.values,
-        sample.values,
-        datamodule.idx_to_class,
-        use_tsne,
-    )
+        img_filepath = csv_filepath.parent / PROJECTION_IMG_FILENAME
+        sample = data.sample(sample_size)
+        plot_interactive_projection(
+            img_filepath,
+            sample.index.values,
+            sample.values,
+            datamodule.idx_to_class,
+            use_tsne,
+        )
+    else:
+        img_filepath = csv_filepath.parent / PROJECTION_IMG_ALL_FILENAME
+        plot_projection(
+            img_filepath,
+            data.index.values,
+            data.values,
+            datamodule.idx_to_class,
+            use_tsne
+        )
+
+        img_filepath = csv_filepath.parent / PROJECTION_IMG_FILENAME
+        sample = data.sample(sample_size)
+        plot_projection(
+            img_filepath,
+            sample.index.values,
+            sample.values,
+            datamodule.idx_to_class,
+            use_tsne,
+        )
 
 
 def plot_projection(
