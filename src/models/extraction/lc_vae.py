@@ -153,6 +153,7 @@ class LCVAE(BaseVAE):
 
 
 @click.command()
+@click.option("--gpu", is_flag=True, help="Enforces GPU training.")
 @click.option("-P", "--num_processes", type=int, default=0, help="Set # of CPUs.")
 @click.option(
     "-L",
@@ -190,6 +191,7 @@ def main(
     lr,
     beta,
     version,
+    gpu
 ) -> None:
     # Setup data and model
     data = SNPDataModule(num_processes=num_processes)
@@ -208,7 +210,7 @@ def main(
 
     # Train model
     logger = CSVLogger("lc_vae", version)
-    train_model(model, data, logger, num_processes, model_is_lazy=True)
+    train_model(model, data, logger, num_processes, model_is_lazy=True, use_gpu=gpu)
 
     # Plot metrics
     plot_metrics(logger, (5, 4))

@@ -13,6 +13,7 @@ def train_model(
     logger: CSVLogger,
     num_processes: int = 1,
     model_is_lazy: bool = False,
+    use_gpu: bool = False
 ) -> None:
     """Automatically trains a model.
 
@@ -38,10 +39,15 @@ def train_model(
     early_stopping = pl.callbacks.EarlyStopping(monitor="val_loss")
     checkpoint = pl.callbacks.ModelCheckpoint(save_weights_only=True)
 
+    accelerator = "cpu"
+    if use_gpu:
+        accelerator = "gpu"
+        num_processes = 1
+
     # Train
     trainer = pl.Trainer(
         logger,
-        accelerator="cpu",
+        accelerator=accelerator,
         num_processes=num_processes,
         max_epochs=400,
         callbacks=[early_stopping, checkpoint],
